@@ -8,19 +8,55 @@
 #include <allegro5/allegro_color.h>
 #include<allegro5\fullscreen_mode.h>
 #include<stdio.h>
+#include<math.h>
 
-
-
+struct Circle
+{
+	float center_x;
+	float center_y;
+	float r;
+}circle;
 //global Variables
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
 float max_height, max_width;//maximum values of screen
-//int pieces[10][10] = { 0 }; test for phase 2
+int pieces[10][10] = { 0 }; 
 ALLEGRO_BITMAP *bg_image;
-//ALLEGRO_BITMAP *nuts_images[10][10]; test for phase 2
-//enum player_turn{black=-1,white=1}player; test for phase 2
+ALLEGRO_BITMAP *nuts_images[10][10]; 
+enum player_turn{black=-1,white=1}player; 
+struct Mouse
+{
+	float posx;
+	float posy;
+}mouse;
 
 
+
+ALLEGRO_BITMAP *create_circle()
+{
+	return NULL;
+}
+
+//check mouse is in circle range
+bool isinrange(int &i,int &j)
+{
+	circle.r= width / 9 > height / 9 ? width / 9 : height / 9;//this will sure that our r is not greater than our square
+	circle.center_x = i * (width / 11);
+	circle.center_y = j * (height / 11);
+	if (powf((mouse.posx - circle.center_x), 2) + powf((mouse.posy- circle.center_y), 2) <= powf(circle.r, 2))//equal of circle
+	{
+		return true;
+	}
+		
+	return false;
+}
+
+
+void putPieces()
+{
+	int i, j;
+
+}
 
 void init_primitive() {
 	al_init_primitives_addon();
@@ -118,13 +154,13 @@ void destroy_bitmap(ALLEGRO_BITMAP *image)
 //control events
 void event_manager(ALLEGRO_EVENT ev)
 {
-	float cursor_x = 0, cursor_y = 0;//mouse coordinates
+	//float cursor_x = 0, cursor_y = 0;//mouse coordinates
 	//check mouse events
 	if (ev.type == ALLEGRO_EVENT_MOUSE_AXES ||
 		ev.type == ALLEGRO_EVENT_MOUSE_ENTER_DISPLAY) {
 		redraw = true;
-		cursor_x = ev.mouse.x;
-		cursor_y = ev.mouse.y;
+		mouse.posx = ev.mouse.x;
+		mouse.posy = ev.mouse.y;
 
 
 	}
@@ -158,7 +194,7 @@ void event_manager(ALLEGRO_EVENT ev)
 	}
 	if (redraw) {
 		redraw = false;
-		printf("mouse curosr location is updated : (%f, %f)", cursor_x, cursor_y);
+		printf("mouse curosr location is updated : (%f, %f)", mouse.posx,mouse.posy);
 		al_flip_display();
 	}
 }
