@@ -10,6 +10,7 @@
 #include<stdio.h>
 
 
+
 //global Variables
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
