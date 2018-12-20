@@ -26,5 +26,11 @@
     <Image Include="go_bg2.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="resources\blackPiece.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\whitePiece.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

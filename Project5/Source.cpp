@@ -10,12 +10,19 @@
 #include<stdio.h>
 #include<math.h>
 
+//structs
 struct Circle
 {
 	float center_x;
 	float center_y;
 	float r;
 }circle;
+struct Mouse
+{
+	float posx;
+	float posy;
+}mouse;
+
 
 //global Variables
 bool end = false, redraw = true;//end:ending the main loop
@@ -25,25 +32,35 @@ int pieces[10][10] = { 0 };
 ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10]; 
 enum player_turn{black=-1,white=1}player; 
-struct Mouse
+
+
+//functions prototype
+ALLEGRO_BITMAP *create_bitmap(char[], float , float , int , int );
+void destroy_bitmap(ALLEGRO_BITMAP*);
+ALLEGRO_BITMAP *create_circle(float, float, float);
+bool isinrange(int &, int &);
+
+
+
+//draw a circle bitmap 
+ALLEGRO_BITMAP *create_circle(float x,float y,float r)
 {
-	float posx;
-	float posy;
-}mouse;
+	ALLEGRO_BITMAP *image;
+	char name[] = "resources/blackPiece.png";
+	x -= r;
+	y -= r;
+	r *= 2;
+	image = create_bitmap(name,x,y,r,r );
 
-
-
-ALLEGRO_BITMAP *create_circle()
-{
-	return NULL;
+	return image;
 }
 
 //check mouse is in circle range
-bool isinrange(int &i,int &j)
+bool isinrange(int &i,int &j,float mosuex,float mousey)
 {
-	circle.r= width / 9 > height / 9 ? width / 9 : height / 9;//this will sure that our r is not greater than our square
+	/*circle.r= width / 9 > height / 9 ? width / 9 : height / 9;//this will sure that our r is not greater than our square
 	circle.center_x = i * (width / 11);
-	circle.center_y = j * (height / 11);
+	circle.center_y = j * (height / 11);*/
 	if (powf((mouse.posx - circle.center_x), 2) + powf((mouse.posy- circle.center_y), 2) <= powf(circle.r, 2))//equal of circle
 	{
 		return true;
@@ -221,6 +238,9 @@ int main()
 	al_register_event_source(event_queue, al_get_display_event_source(al_get_current_display()));//display source
 	al_register_event_source(event_queue, al_get_mouse_event_source());//mouse source
 	al_register_event_source(event_queue, al_get_keyboard_event_source());//keyboard source
+	
+	
+	
 	//main loop
 	while (!end)
 	{

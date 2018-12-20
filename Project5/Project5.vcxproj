@@ -149,6 +149,8 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="go_bg2.png" />
+    <Image Include="resources\blackPiece.png" />
+    <Image Include="resources\whitePiece.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
