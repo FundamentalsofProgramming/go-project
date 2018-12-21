@@ -31,7 +31,10 @@ ALLEGRO_BITMAP *create_bitmap(char[], float, float, int, int);
 void destroy_bitmap(ALLEGRO_BITMAP*);
 ALLEGRO_BITMAP *create_circle(float, float, float);
 bool isinrange(int &, int &);
-
+int message_box(const char*,
+	const char*,
+	const char*);
+void resize_screen();
 //global Variables
 int array[10][10] = { 0 };
 bool end = false, redraw = true;//end:ending the main loop
@@ -50,6 +53,8 @@ void turn() { //changing turns it should be called each time @event manager
 	else
 		playerturn = white;
 }
+
+
 void checkmovarab(player_turn playerturn,int i ,int j) {
 	if (i >= 1 && j >= 1)
 	{
@@ -91,11 +96,11 @@ void arrayset(int array[][10], int i, int j) {// i and j will be defined @event 
 
 
 //draw a circle bitmap 
-ALLEGRO_BITMAP *create_circle(float x,float y,float r)
+ALLEGRO_BITMAP *create_circle(float x,float y,float r,player_turn P_turn)
 {
 	ALLEGRO_BITMAP *image;
 	char name[30];
-	if (playerturn == black)
+	if (P_turn == black)
 	{
 		strcpy(name, "resources/blackPiece.png");
 	}
@@ -111,13 +116,17 @@ ALLEGRO_BITMAP *create_circle(float x,float y,float r)
 	return image;
 }
 
-//check mouse is in circle range
-bool isinrange(int &i,int &j)
+void setCircle(int &i,int &j)
 {
-	circle.r= width / 9 > height / 9 ? height / 9 :width / 9 ;//this will sure that our r is not greater than our square
+	circle.r = width / 9 > height / 9 ? height / 9 : width / 9;//this will sure that our r is not greater than our square
 	circle.r *= .4f;
 	circle.center_x = i * (width / 11);
 	circle.center_y = j * (height / 11);
+}
+//check mouse is in circle range
+bool isinrange(int &i,int &j)
+{
+	
 	if (powf((mouse.posx - circle.center_x), 2) + powf((mouse.posy- circle.center_y), 2) <= powf(circle.r, 2))//equal of circle
 	{
 		return true;
@@ -132,7 +141,31 @@ void setAndis(int &i,int &j)
 	i = (int)((mouse.posx / (width / 11)) + .5f);
 	j= (int)((mouse.posy / (height / 11)) + .5f);
 }
-
+//redraw previous drew circles
+void Redraw()
+{
+	
+	for (int i = 1; i < 11; i++)
+	{
+		for (int j = 1; j < 11; j++)
+		{
+			if (arraycheck(array, i - 1, j - 1) == 0)
+				continue;
+			else if (arraycheck(array, i - 1, j - 1) == 1)
+			{
+				setCircle(i, j);//set circle properties
+				destroy_bitmap(nuts_images[i - 1][j - 1]);//destroy previous circle image for memory managment
+				nuts_images[i-1][j-1]= create_circle(circle.center_x, circle.center_y, circle.r,white);
+			}
+			else
+			{
+				destroy_bitmap(nuts_images[i - 1][j - 1]);
+				setCircle(i, j);
+				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r,black);
+			}
+		}
+	}
+}
 void putPieces()
 {
 	int i, j;
@@ -141,17 +174,20 @@ void putPieces()
 	{
 		if (j >= 1 && j <= 10)
 		{
+			setCircle(i, j);
 			//check that click is trigger range
 			if (isinrange(i, j))
 			{
+				
 				//set coordinate for array limits
 				i--;
 				j--;
 				//is this home filled ?
 				if (arraycheck(array, i, j) == 0)
 				{
+					
 					//save image into an array
-					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r);
+					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r,playerturn);
 					arrayset(array, i, j);
 					turn();//change player turn
 				}
@@ -253,6 +289,46 @@ void destroy_bitmap(ALLEGRO_BITMAP *image)
 	al_destroy_bitmap(image);
 	al_flip_display();
 }
+/*//this in test progress
+void undo()
+{
+	int i, j;
+	printf("Test");
+	setAndis(i, j);//caculate which coordinate has been clicked
+	if (i >= 1 && i <= 10)
+	{
+		if (j >= 1 && j <= 10)
+		{
+			//check that click is trigger range
+			if (isinrange(i, j))
+			{
+				
+				if (arraycheck(array, i - 1, j - 1))
+				{
+					//destroy_bitmap(nuts_images[i - 1][j - 1]);
+					array[i - 1][j - 1] = 0;
+					al_resize_display(al_get_current_display(), width, height);
+					resize_screen();
+					//Redraw();
+					al_flip_display();
+				}
+
+			}
+		}
+	}
+}*/
+void resize_screen()
+{
+	
+	destroy_bitmap(bg_image);//destroy previos bg
+	char name[] = "resources/go_bg2.png";
+	al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
+	height = al_get_display_height(al_get_current_display());//height of window
+	width = al_get_display_width(al_get_current_display());//width of window
+	bg_image = create_bitmap(name, 0, 0, width, height);//create a new bg image
+	Redraw();
+	al_flip_display();
+}
 //control events
 void event_manager(ALLEGRO_EVENT ev)
 {
@@ -269,13 +345,7 @@ void event_manager(ALLEGRO_EVENT ev)
 	//do the resizing process
 	else if (ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE)
 	{
-		destroy_bitmap(bg_image);//destroy previos bg
-		char name[] = "resources/go_bg2.png";
-		al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
-		height = al_get_display_height(al_get_current_display());//height of window
-		width = al_get_display_width(al_get_current_display());//width of window
-		bg_image = create_bitmap(name, 0, 0, width, height);//create a new bg image
-		al_flip_display();
+		resize_screen();
 		redraw = true;
 	}
 	//check mouse clicks
@@ -288,6 +358,13 @@ void event_manager(ALLEGRO_EVENT ev)
 			mouse.posy = ev.mouse.y;
 			putPieces();//call put function
 		}
+		/*else if (ev.mouse.button == 2)//this in test progress
+		{
+			//printf("test1");
+			mouse.posx = ev.mouse.x;
+			mouse.posy = ev.mouse.y;
+			undo();
+		}*/
 	}
 	//do close process
 	else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
