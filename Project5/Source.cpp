@@ -8,7 +8,7 @@
 #include <allegro5/allegro_color.h>
 #include<allegro5\fullscreen_mode.h>
 #include<stdio.h>
-
+// this is just a fking test
 
 
 //global Variables
