@@ -9,6 +9,7 @@
 #include<allegro5\fullscreen_mode.h>
 #include<stdio.h>
 #include<math.h>
+#include<string.h>
 
 //structs
 struct Circle
@@ -24,21 +25,53 @@ struct Mouse
 }mouse;
 
 
+
+//functions prototype
+ALLEGRO_BITMAP *create_bitmap(char[], float, float, int, int);
+void destroy_bitmap(ALLEGRO_BITMAP*);
+ALLEGRO_BITMAP *create_circle(float, float, float);
+bool isinrange(int &, int &);
+
 //global Variables
+int array[10][10] = { 0 };
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
 float max_height, max_width;//maximum values of screen
 int pieces[10][10] = { 0 }; 
 ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10]; 
-enum player_turn{black=-1,white=1}player; 
+
+enum player_turn{black=-1,white=1}; 
+//enum player_turn { black = -1, white = 1 };
+player_turn playerturn = white; // we can change who will start the game first here
+void turn() { //changing turns it should be called each time @event manager
+	if (playerturn == white)
+		playerturn = black;
+	else
+		playerturn = white;
+}
+int arraycheck(int array[][10], int i, int j) { // i and j will be defined @event manager (they declare coordinates)
+	if (array[i][j] == 0) return 0;
+	else if (array[i][j] == 1) return 1;
+	else return -1;
+}
+void arrayset(int array[][10], int i, int j) {// i and j will be defined @event manager (they declare coordinates)
+	if (playerturn == white)
+	{
+		if (arraycheck(array,i,j) == 0)
+			array[i][j] = 1;
+	}
+	else
+	{
+		if (arraycheck(array, i, j) == 0)
+			array[i][j] = -1;
+	}
+}
 
 
-//functions prototype
-ALLEGRO_BITMAP *create_bitmap(char[], float , float , int , int );
-void destroy_bitmap(ALLEGRO_BITMAP*);
-ALLEGRO_BITMAP *create_circle(float, float, float);
-bool isinrange(int &, int &);
+
+
+
 
 
 
@@ -46,7 +79,15 @@ bool isinrange(int &, int &);
 ALLEGRO_BITMAP *create_circle(float x,float y,float r)
 {
 	ALLEGRO_BITMAP *image;
-	char name[] = "resources/blackPiece.png";
+	char name[30];
+	if (playerturn == black)
+	{
+		strcpy(name, "resources/blackPiece.png");
+	}
+	else {
+		strcpy(name, "resources/whitePiece.png");
+	}
+	//set circle center poin in position
 	x -= r;
 	y -= r;
 	r *= 2;
@@ -56,11 +97,12 @@ ALLEGRO_BITMAP *create_circle(float x,float y,float r)
 }
 
 //check mouse is in circle range
-bool isinrange(int &i,int &j,float mosuex,float mousey)
+bool isinrange(int &i,int &j)
 {
-	/*circle.r= width / 9 > height / 9 ? width / 9 : height / 9;//this will sure that our r is not greater than our square
+	circle.r= width / 9 > height / 9 ? height / 9 :width / 9 ;//this will sure that our r is not greater than our square
+	circle.r *= .4f;
 	circle.center_x = i * (width / 11);
-	circle.center_y = j * (height / 11);*/
+	circle.center_y = j * (height / 11);
 	if (powf((mouse.posx - circle.center_x), 2) + powf((mouse.posy- circle.center_y), 2) <= powf(circle.r, 2))//equal of circle
 	{
 		return true;
@@ -68,12 +110,39 @@ bool isinrange(int &i,int &j,float mosuex,float mousey)
 		
 	return false;
 }
-
+//caculate which coordinate has been clicked
+void setAndis(int &i,int &j)
+{
+	//+.5f will round it
+	i = (int)((mouse.posx / (width / 11)) + .5f);
+	j= (int)((mouse.posy / (height / 11)) + .5f);
+}
 
 void putPieces()
 {
 	int i, j;
-
+	setAndis(i, j);//caculate which coordinate has been clicked
+	if (i >= 1 && i <= 10)
+	{
+		if (j >= 1 && j <= 10)
+		{
+			//check that click is trigger range
+			if (isinrange(i, j))
+			{
+				//set coordinate for array limits
+				i--;
+				j--;
+				//is this home filled ?
+				if (arraycheck(array, i, j) == 0)
+				{
+					//save image into an array
+					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r);
+					arrayset(array, i, j);
+					turn();//change player turn
+				}
+			}
+		}
+	}
 }
 
 void init_primitive() {
@@ -177,8 +246,8 @@ void event_manager(ALLEGRO_EVENT ev)
 	if (ev.type == ALLEGRO_EVENT_MOUSE_AXES ||
 		ev.type == ALLEGRO_EVENT_MOUSE_ENTER_DISPLAY) {
 		redraw = true;
-		mouse.posx = ev.mouse.x;
-		mouse.posy = ev.mouse.y;
+	//	mouse.posx = ev.mouse.x;
+	//	mouse.posy = ev.mouse.y;
 
 
 	}
@@ -193,6 +262,17 @@ void event_manager(ALLEGRO_EVENT ev)
 		bg_image = create_bitmap(name, 0, 0, width, height);//create a new bg image
 		al_flip_display();
 		redraw = true;
+	}
+	//check mouse clicks
+	else if (ev.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP)
+	{
+		//check left click
+		if (ev.mouse.button == 1)
+		{
+			mouse.posx = ev.mouse.x;
+			mouse.posy = ev.mouse.y;
+			putPieces();//call put function
+		}
 	}
 	//do close process
 	else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
