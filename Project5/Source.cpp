@@ -18,13 +18,38 @@ struct Circle
 }circle;
 
 //global Variables
+int array[10][10] = { 0 };
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
 float max_height, max_width;//maximum values of screen
 int pieces[10][10] = { 0 }; 
 ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10]; 
-enum player_turn{black=-1,white=1}player; 
+enum player_turn { black = -1, white = 1 };
+player_turn playerturn = white; // we can change who will start the game first here
+void turn() { //changing turns it should be called each time @event manager
+	if (playerturn == white)
+		playerturn = black;
+	else
+		playerturn = white;
+}
+int arraycheck(int array[][10], int i, int j) { // i and j will be defined @event manager (they declare coordinates)
+	if (array[i][j] == 0) return 0;
+	else if (array[i][j] == 1) return 1;
+	else return -1;
+}
+void arrayset(int array[][10], int i, int j) {// i and j will be defined @event manager (they declare coordinates)
+	if (playerturn == white)
+	{
+		if (arraycheck == 0)
+			array[i][j] = 1;
+	}
+	else
+	{
+		if (arraycheck == 0)
+			array[i][j] = -1;
+	}
+}
 struct Mouse
 {
 	float posx;
