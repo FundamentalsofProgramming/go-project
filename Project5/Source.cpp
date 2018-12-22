@@ -33,6 +33,21 @@ void turn() { //changing turns it should be called each time @event manager
 	else
 		playerturn = white;
 }
+void checkmovarab(player_turn playerturn,int i ,int j) {
+	if (i >= 1 && j >= 1)
+	{
+		if (playerturn == black)
+		{
+			if (array[i - 1][j - 1] == -1 || array[i - 1][j + 1] == -1 || array[i + 1][j - 1] == -1 || array[i + 1][j + 1] == -1)
+				message_box("you can not put here", "NO", "warning!!!");
+		}
+		if (playerturn == white)
+		{
+			if (array[i - 1][j - 1] == 1 || array[i - 1][j + 1] == 1 || array[i + 1][j - 1] == 1 || array[i + 1][j + 1] == 1)
+				message_box("you can not put here", "NO", "warning!!!");
+		}
+	}
+}
 int arraycheck(int array[][10], int i, int j) { // i and j will be defined @event manager (they declare coordinates)
 	if (array[i][j] == 0) return 0;
 	else if (array[i][j] == 1) return 1;
