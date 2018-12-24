@@ -103,10 +103,10 @@ ALLEGRO_BITMAP *create_circle(float x,float y,float r,player_turn P_turn)
 
 void setCircle(int &i,int &j)
 {
-	circle.r = width / 9 > height / 9 ? height / 9 : width / 9;//this will sure that our r is not greater than our square
-	circle.r *= .4f;
-	circle.center_x = i * (width / 11);
-	circle.center_y = j * (height / 11);
+	circle.r = width / 11 > height / 11 ? height / 11 : width / 11;//this will sure that our r is not greater than our square
+	circle.r *= .5f;
+	circle.center_x = j * (width / 11);
+	circle.center_y = i * (height / 11);
 }
 //check mouse is in circle range
 bool isinrange(int &i,int &j)
@@ -123,8 +123,8 @@ bool isinrange(int &i,int &j)
 void setAndis(int &i,int &j)
 {
 	//+.5f will round it
-	i = (int)((mouse.posx / (width / 11)) + .5f);
-	j= (int)((mouse.posy / (height / 11)) + .5f);
+	j = (int)((mouse.posx / (width / 11)) + .5f);
+	i= (int)((mouse.posy / (height / 11)) + .5f);
 }
 //redraw previous drew circles
 void Redraw()
@@ -175,6 +175,7 @@ void putPieces()
 					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r,playerturn);
 					arrayset(array, i, j);
 					turn();//change player turn
+					printf("%d %d", i, j);
 				}
 			}
 		}
@@ -201,8 +202,8 @@ int init_display(float waittime) {
 	}
 	al_set_new_display_flags(ALLEGRO_RESIZABLE);//set windows resizable
 	
-	ALLEGRO_DISPLAY* display = al_create_display(800, 800);
-	al_set_window_constraints(display, 500, 500, max_width, max_height);//bound the window
+	ALLEGRO_DISPLAY* display = al_create_display(max_width/2, max_height/2);
+	al_set_window_constraints(display, max_width/3, max_height/3, max_width, max_height);//bound the window
 	al_apply_window_constraints(display, true);//apply constraints
 	al_clear_to_color(al_map_rgb(50, 0, 0));
 	al_flip_display();
@@ -369,7 +370,7 @@ void event_manager(ALLEGRO_EVENT ev)
 	}
 	if (redraw) {
 		redraw = false;
-		printf("mouse curosr location is updated : (%f, %f)", mouse.posx,mouse.posy);
+		//printf("mouse curosr location is updated : (%f, %f)", mouse.posx,mouse.posy);
 		al_flip_display();
 	}
 }
