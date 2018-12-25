@@ -11,6 +11,7 @@
 #include<math.h>
 #include<string.h>
 
+
 //structs
 struct Circle
 {
@@ -36,15 +37,15 @@ int message_box(const char*,
 	const char*);
 void resize_screen();
 //global Variables
-int array[10][10] = { 0 };
+int capturestatus[10][10][2] = { 4 }, array[10][10] = { 0 }; // column 0 for white and 1 for black
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
 float max_height, max_width;//maximum values of screen
-int pieces[10][10] = { 0 }; 
+int pieces[10][10] = { 0 };
 ALLEGRO_BITMAP *bg_image;
-ALLEGRO_BITMAP *nuts_images[10][10]; 
+ALLEGRO_BITMAP *nuts_images[10][10];
 
-enum player_turn{black=-1,white=1}; 
+enum player_turn { black = -1, white = 1 };
 //enum player_turn { black = -1, white = 1 };
 player_turn playerturn = white; // we can change who will start the game first here
 void turn() { //changing turns it should be called each time @event manager
@@ -54,7 +55,43 @@ void turn() { //changing turns it should be called each time @event manager
 		playerturn = white;
 }
 
+//void capture(int i,int j,player_turn playerturn) {
+//	int k=0;
+//	if (playerturn == white)
+//	{
+//		capturestatus[i][j][0] = (-1);
+//		capturestatus[i][j][1] = (-1);
+//		capturestatus[i][j - 1][1]--;
+//		capturestatus[i][j + 1][1]--;
+//		capturestatus[i-1][j][1]--;
+//		capturestatus[i+1][j][1]--;
+//	}
+//	else if (playerturn == black)
+//	{
+//		capturestatus[i][j][1] = (-1);
+//		capturestatus[i][j][0] = (-1);
+//		capturestatus[i][j - 1][0]--;
+//		capturestatus[i][j + 1][0]--; 
+//		capturestatus[i - 1][j][0]--;
+//		capturestatus[i + 1][j][0]--;
+//	}
+//}
 
+void checkmovarab(player_turn playerturn, int i, int j) {
+	if (i >= 1 && j >= 1)
+	{
+		if (playerturn == black)
+		{
+			if (array[i - 1][j - 1] == -1 || array[i - 1][j + 1] == -1 || array[i + 1][j - 1] == -1 || array[i + 1][j + 1] == -1)
+				message_box("you can not put here", "NO", "warning!!!");
+		}
+		if (playerturn == white)
+		{
+			if (array[i - 1][j - 1] == 1 || array[i - 1][j + 1] == 1 || array[i + 1][j - 1] == 1 || array[i + 1][j + 1] == 1)
+				message_box("you can not put here", "NO", "warning!!!");
+		}
+	}
+}
 int arraycheck(int array[][10], int i, int j) { // i and j will be defined @event manager (they declare coordinates)
 	if (array[i][j] == 0) return 0;
 	else if (array[i][j] == 1) return 1;
@@ -63,7 +100,7 @@ int arraycheck(int array[][10], int i, int j) { // i and j will be defined @even
 void arrayset(int array[][10], int i, int j) {// i and j will be defined @event manager (they declare coordinates)
 	if (playerturn == white)
 	{
-		if (arraycheck(array,i,j) == 0)
+		if (arraycheck(array, i, j) == 0)
 			array[i][j] = 1;
 	}
 	else
@@ -81,55 +118,127 @@ void arrayset(int array[][10], int i, int j) {// i and j will be defined @event 
 
 
 //draw a circle bitmap 
-ALLEGRO_BITMAP *create_circle(float x,float y,float r,player_turn P_turn)
+ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 {
 	ALLEGRO_BITMAP *image;
 	char name[30];
 	if (P_turn == black)
 	{
-		strcpy(name, "resources/blackPiece.png");
+		strcpy(name, "blackPiece.png");
 	}
 	else {
-		strcpy(name, "resources/whitePiece.png");
+		strcpy(name, "whitePiece.png");
 	}
 	//set circle center poin in position
 	x -= r;
 	y -= r;
 	r *= 2;
-	image = create_bitmap(name,x,y,r,r );
+	image = create_bitmap(name, x, y, r, r);
 
 	return image;
 }
 
-void setCircle(int &i,int &j)
+void checkenemy(int i, int j, player_turn playerturn) {
+	if (array[i + 1][j] == int(playerturn)*(-1))
+		printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
+	if (array[i][j - 1] == int(playerturn)*(-1))
+		printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
+	if (array[i][j + 1] == int(playerturn)*(-1))
+		printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
+	if (array[i - 1][j] == int(playerturn)*(-1))
+		printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
+}
+
+
+
+int check(int i, int j, player_turn playerturn, int hosti, int hostj) {
+	int result[4] = { 0 };
+	if (!(i + 1 == hosti && j == hostj))
+	{
+		if (array[i + 1][j] == int(playerturn))
+			result[0] = check(i + 1, j, playerturn, i, j);
+		else if (array[i + 1][j] == int(playerturn)*(-1))
+			result[0] = int(playerturn)*(-1);
+		else;
+
+
+	}
+
+	else
+	{
+		result[3] = 2;
+	}
+	if (!(i == hosti && j + 1 == hostj))
+	{
+		if (array[i][j + 1] == int(playerturn))
+			result[1] = check(i, j + 1, playerturn, i, j);
+		else if (array[i][j + 1] == int(playerturn)*(-1))
+			result[1] = int(playerturn)*(-1);
+		else;
+	}
+	else
+	{
+		result[3] = 2;
+	}
+	if (!(i == hosti && j - 1 == hostj))
+
+	{
+		if (array[i][j - 1] == int(playerturn))
+			result[2] = check(i, j - 1, playerturn, i, j);
+		else if (array[i][j - 1] == int(playerturn)*(-1))
+			result[2] = int(playerturn)*(-1);
+		else;
+	}
+	else
+	{
+		result[3] = 2;
+	}
+	if (!(i - 1 == hosti && j == hostj))
+	{
+		if (array[i - 1][j] == int(playerturn))
+			result[3] = check(i - 1, j, playerturn, i, j);
+		else if (array[i - 1][j] == int(playerturn)*(-1))
+			result[3] = int(playerturn)*(-1);
+		else;
+	}
+	else
+	{
+		result[3] = 2;
+	}
+	if (result[0] * result[1] * result[2] * result[3] == 0)
+		return 0;
+	else return playerturn;
+}
+
+void setCircle(int &i, int &j)
 {
-	circle.r = width / 9 > height / 9 ? height / 9 : width / 9;//this will sure that our r is not greater than our square
-	circle.r *= .4f;
-	circle.center_x = i * (width / 11);
-	circle.center_y = j * (height / 11);
+	circle.r = width / 11 > height / 11 ? height / 11 : width / 11;//this will sure that our r is not greater than our square
+	circle.r *= .5f;
+	circle.center_x = j * (width / 11);
+	circle.center_y = i * (height / 11);
 }
 //check mouse is in circle range
-bool isinrange(int &i,int &j)
+bool isinrange(int &i, int &j)
 {
-	
-	if (powf((mouse.posx - circle.center_x), 2) + powf((mouse.posy- circle.center_y), 2) <= powf(circle.r, 2))//equal of circle
+
+	if (powf((mouse.posx - circle.center_x), 2) + powf((mouse.posy - circle.center_y), 2) <= powf(circle.r, 2))//equal of circle
 	{
 		return true;
 	}
-		
+
 	return false;
 }
 //caculate which coordinate has been clicked
-void setAndis(int &i,int &j)
+void setAndis(int &i, int &j)
 {
 	//+.5f will round it
-	i = (int)((mouse.posx / (width / 11)) + .5f);
-	j= (int)((mouse.posy / (height / 11)) + .5f);
+	j = (int)((mouse.posx / (width / 11)) + .5f);
+	i = (int)((mouse.posy / (height / 11)) + .5f);
 }
 //redraw previous drew circles
 void Redraw()
 {
-	
+
 	for (int i = 1; i < 11; i++)
 	{
 		for (int j = 1; j < 11; j++)
@@ -140,13 +249,13 @@ void Redraw()
 			{
 				setCircle(i, j);//set circle properties
 				destroy_bitmap(nuts_images[i - 1][j - 1]);//destroy previous circle image for memory managment
-				nuts_images[i-1][j-1]= create_circle(circle.center_x, circle.center_y, circle.r,white);
+				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r, white);
 			}
 			else
 			{
 				destroy_bitmap(nuts_images[i - 1][j - 1]);
 				setCircle(i, j);
-				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r,black);
+				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r, black);
 			}
 		}
 	}
@@ -163,18 +272,25 @@ void putPieces()
 			//check that click is trigger range
 			if (isinrange(i, j))
 			{
-				
+
 				//set coordinate for array limits
 				i--;
 				j--;
 				//is this home filled ?
 				if (arraycheck(array, i, j) == 0)
 				{
-					
+
 					//save image into an array
-					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r,playerturn);
+					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r, playerturn);
 					arrayset(array, i, j);
+					checkenemy(i, j, playerturn);
 					turn();//change player turn
+						   //int checkresult=check(i, j, playerturn, i, j);
+						   /*	if (checkresult == 0)
+						   printf("free \n");
+						   else
+						   printf("capture.\n");*/
+
 				}
 			}
 		}
@@ -200,9 +316,9 @@ int init_display(float waittime) {
 		return -1;
 	}
 	al_set_new_display_flags(ALLEGRO_RESIZABLE);//set windows resizable
-	
-	ALLEGRO_DISPLAY* display = al_create_display(800, 800);
-	al_set_window_constraints(display, 500, 500, max_width, max_height);//bound the window
+
+	ALLEGRO_DISPLAY* display = al_create_display(max_width / 2, max_height / 2);
+	al_set_window_constraints(display, max_width / 3, max_height / 3, max_width, max_height);//bound the window
 	al_apply_window_constraints(display, true);//apply constraints
 	al_clear_to_color(al_map_rgb(50, 0, 0));
 	al_flip_display();
@@ -263,9 +379,9 @@ void get_max_screen_size()
 
 	ALLEGRO_DISPLAY* display = al_create_display(800, 800);
 	al_acknowledge_resize(al_get_current_display());//this tell gpu that windows size has changed
-	//set max_width and max_height
+													//set max_width and max_height
 	max_height = al_get_display_height(al_get_current_display());
-	max_width= al_get_display_width(al_get_current_display());
+	max_width = al_get_display_width(al_get_current_display());
 	al_destroy_display(al_get_current_display());//destroy test display
 }
 //destroy bitmap for save memory
@@ -277,36 +393,36 @@ void destroy_bitmap(ALLEGRO_BITMAP *image)
 /*//this in test progress
 void undo()
 {
-	int i, j;
-	printf("Test");
-	setAndis(i, j);//caculate which coordinate has been clicked
-	if (i >= 1 && i <= 10)
-	{
-		if (j >= 1 && j <= 10)
-		{
-			//check that click is trigger range
-			if (isinrange(i, j))
-			{
-				
-				if (arraycheck(array, i - 1, j - 1))
-				{
-					//destroy_bitmap(nuts_images[i - 1][j - 1]);
-					array[i - 1][j - 1] = 0;
-					al_resize_display(al_get_current_display(), width, height);
-					resize_screen();
-					//Redraw();
-					al_flip_display();
-				}
+int i, j;
+printf("Test");
+setAndis(i, j);//caculate which coordinate has been clicked
+if (i >= 1 && i <= 10)
+{
+if (j >= 1 && j <= 10)
+{
+//check that click is trigger range
+if (isinrange(i, j))
+{
 
-			}
-		}
-	}
+if (arraycheck(array, i - 1, j - 1))
+{
+//destroy_bitmap(nuts_images[i - 1][j - 1]);
+array[i - 1][j - 1] = 0;
+al_resize_display(al_get_current_display(), width, height);
+resize_screen();
+//Redraw();
+al_flip_display();
+}
+
+}
+}
+}
 }*/
 void resize_screen()
 {
-	
+
 	destroy_bitmap(bg_image);//destroy previos bg
-	char name[] = "resources/go_bg2.png";
+	char name[] = "go_bg2.png";
 	al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
 	height = al_get_display_height(al_get_current_display());//height of window
 	width = al_get_display_width(al_get_current_display());//width of window
@@ -322,8 +438,8 @@ void event_manager(ALLEGRO_EVENT ev)
 	if (ev.type == ALLEGRO_EVENT_MOUSE_AXES ||
 		ev.type == ALLEGRO_EVENT_MOUSE_ENTER_DISPLAY) {
 		redraw = true;
-	//	mouse.posx = ev.mouse.x;
-	//	mouse.posy = ev.mouse.y;
+		//	mouse.posx = ev.mouse.x;
+		//	mouse.posy = ev.mouse.y;
 
 
 	}
@@ -345,10 +461,10 @@ void event_manager(ALLEGRO_EVENT ev)
 		}
 		/*else if (ev.mouse.button == 2)//this in test progress
 		{
-			//printf("test1");
-			mouse.posx = ev.mouse.x;
-			mouse.posy = ev.mouse.y;
-			undo();
+		//printf("test1");
+		mouse.posx = ev.mouse.x;
+		mouse.posy = ev.mouse.y;
+		undo();
 		}*/
 	}
 	//do close process
@@ -369,7 +485,8 @@ void event_manager(ALLEGRO_EVENT ev)
 	}
 	if (redraw) {
 		redraw = false;
-		printf("mouse curosr location is updated : (%f, %f)", mouse.posx,mouse.posy);
+		//printf("mouse curosr location is updated : (%f, %f)", mouse.posx, mouse.posy);
+		//printf("max height = \n %f", max_height);
 		al_flip_display();
 	}
 }
@@ -388,17 +505,17 @@ int main()
 
 	get_max_screen_size();
 	inits();
-	char name[] = "resources/go_bg2.png";
+	char name[] = "go_bg2.png";
 	bg_image = create_bitmap(name, 0, 0, width, height);
 	ALLEGRO_EVENT_QUEUE *event_queue = al_create_event_queue();
 	//registering event sources
 	al_register_event_source(event_queue, al_get_display_event_source(al_get_current_display()));//display source
 	al_register_event_source(event_queue, al_get_mouse_event_source());//mouse source
 	al_register_event_source(event_queue, al_get_keyboard_event_source());//keyboard source
-	
-	
-	
-	//main loop
+
+
+
+																		  //main loop
 	while (!end)
 	{
 
