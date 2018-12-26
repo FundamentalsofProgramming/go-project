@@ -10,6 +10,7 @@
 #include<stdio.h>
 #include<math.h>
 #include<string.h>
+#include"GameRules.h"
 
 
 //structs
@@ -36,12 +37,14 @@ int message_box(const char*,
 	const char*,
 	const char*);
 void resize_screen();
+
+
 //global Variables
-int capturestatus[10][10][2] = { 4 }, array[10][10] = { 0 }; // column 0 for white and 1 for black
+int array[10][10] = { 0 }; // column 0 for white and 1 for black
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
 float max_height, max_width;//maximum values of screen
-int pieces[10][10] = { 0 };
+//int pieces[10][10] = { 0 };
 ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10];
 
@@ -77,21 +80,7 @@ void turn() { //changing turns it should be called each time @event manager
 //	}
 //}
 
-void checkmovarab(player_turn playerturn, int i, int j) {
-	if (i >= 1 && j >= 1)
-	{
-		if (playerturn == black)
-		{
-			if (array[i - 1][j - 1] == -1 || array[i - 1][j + 1] == -1 || array[i + 1][j - 1] == -1 || array[i + 1][j + 1] == -1)
-				message_box("you can not put here", "NO", "warning!!!");
-		}
-		if (playerturn == white)
-		{
-			if (array[i - 1][j - 1] == 1 || array[i - 1][j + 1] == 1 || array[i + 1][j - 1] == 1 || array[i + 1][j + 1] == 1)
-				message_box("you can not put here", "NO", "warning!!!");
-		}
-	}
-}
+
 int arraycheck(int array[][10], int i, int j) { // i and j will be defined @event manager (they declare coordinates)
 	if (array[i][j] == 0) return 0;
 	else if (array[i][j] == 1) return 1;
@@ -124,10 +113,10 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	char name[30];
 	if (P_turn == black)
 	{
-		strcpy(name, "blackPiece.png");
+		strcpy(name, "resources/blackPiece.png");
 	}
 	else {
-		strcpy(name, "whitePiece.png");
+		strcpy(name, "resources/whitePiece.png");
 	}
 	//set circle center poin in position
 	x -= r;
@@ -138,68 +127,121 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	return image;
 }
 
-void checkenemy(int i, int j, player_turn playerturn) {
-	if (array[i + 1][j] == int(playerturn)*(-1))
-		printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
-	if (array[i][j - 1] == int(playerturn)*(-1))
-		printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
-	if (array[i][j + 1] == int(playerturn)*(-1))
-		printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
-	if (array[i - 1][j] == int(playerturn)*(-1))
-		printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
-}
-
-
-
-int check(int i, int j, player_turn playerturn, int hosti, int hostj) {
+int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[][10]) {
 	int result[4] = { 0 };
 	if (!(i + 1 == hosti && j == hostj))
 	{
-		if (array[i + 1][j] == int(playerturn))
-			result[0] = check(i + 1, j, playerturn, i, j);
-		else if (array[i + 1][j] == int(playerturn)*(-1))
+		if (i + 1 >= 10 || j >= 10)
+		{
 			result[0] = int(playerturn)*(-1);
-		else;
+		}
+		else if (debug[i + 1][j] != 0)
+		{
+			result[0] = int(playerturn)*(-1);
+			
+		}
+		else if (array[i + 1][j] == int(playerturn))
+		{
+			debug[i + 1][j] = 1;
+			result[0] = check(i + 1, j, playerturn, i, j,debug);
+			
+		}
+		else if (array[i + 1][j] == int(playerturn)*(-1))
+		{
+			debug[i + 1][j] = 1;
+			result[0] = int(playerturn)*(-1);
+		}
+		
+		else
+			debug[i + 1][j] = 1;;
 
 
 	}
 
 	else
 	{
-		result[3] = 2;
+		result[0] = 2;
 	}
 	if (!(i == hosti && j + 1 == hostj))
 	{
-		if (array[i][j + 1] == int(playerturn))
-			result[1] = check(i, j + 1, playerturn, i, j);
-		else if (array[i][j + 1] == int(playerturn)*(-1))
+		if (i  >= 10 || j+1 >= 10)
+		{
 			result[1] = int(playerturn)*(-1);
-		else;
+		}
+		else if (debug[i ][j+1] != 0)
+		{
+			result[1] = int(playerturn)*(-1);
+
+		}
+		else if (array[i][j + 1] == int(playerturn))
+		{
+			debug[i ][j+1] = 1;
+			result[1] = check(i, j + 1, playerturn, i, j, debug);
+		}
+		else if (array[i][j + 1] == int(playerturn)*(-1))
+		{
+			debug[i ][j+1] = 1;
+			result[1] = int(playerturn)*(-1);
+		}
+		else
+			debug[i ][j+1] = 1;;
 	}
 	else
 	{
-		result[3] = 2;
+		result[1] = 2;
 	}
 	if (!(i == hosti && j - 1 == hostj))
 
 	{
-		if (array[i][j - 1] == int(playerturn))
-			result[2] = check(i, j - 1, playerturn, i, j);
-		else if (array[i][j - 1] == int(playerturn)*(-1))
+		if (i  >= 10 || j-1 <= -1)
+		{
 			result[2] = int(playerturn)*(-1);
-		else;
+		}
+		else if (debug[i ][j-1] != 0)
+		{
+			result[2] = int(playerturn)*(-1);
+
+		}
+		else if (array[i][j - 1] == int(playerturn))
+		{
+			debug[i ][j-1] = 1;
+			result[2] = check(i, j - 1, playerturn, i, j, debug);
+		}
+		else if (array[i][j - 1] == int(playerturn)*(-1))
+		{
+			debug[i][j-1] = 1;
+			result[2] = int(playerturn)*(-1);
+		}
+		else
+			debug[i ][j+1] = 1;;
 	}
 	else
 	{
-		result[3] = 2;
+		result[2] = 2;
 	}
 	if (!(i - 1 == hosti && j == hostj))
 	{
-		if (array[i - 1][j] == int(playerturn))
-			result[3] = check(i - 1, j, playerturn, i, j);
-		else if (array[i - 1][j] == int(playerturn)*(-1))
+		if (i -1 <= -1 || j >= 10)
+		{
 			result[3] = int(playerturn)*(-1);
-		else;
+		}
+		else if (debug[i -1][j] != 0)
+		{
+			result[3] = int(playerturn)*(-1);
+
+		}
+		else if (array[i - 1][j] == int(playerturn))
+		{
+			debug[i -1][j] = 1;
+			result[3] = check(i - 1, j, playerturn, i, j, debug);
+		}
+		else if (array[i - 1][j] == int(playerturn)*(-1))
+		{
+			debug[i-1][j] = 1;
+			result[3] = int(playerturn)*(-1);
+		}
+		else
+			debug[i -1][j] = 1;;
 	}
 	else
 	{
@@ -209,6 +251,62 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj) {
 		return 0;
 	else return playerturn;
 }
+void checkenemy(int i, int j, player_turn playerturn) {
+	player_turn pt = playerturn == white ? black : white;
+	int debug[10][10] = { 0 };
+	int suicide[4] = { 0 };
+	int test[4] = { 0 };
+	if (array[i + 1][j] == int(playerturn)*(-1))
+	{
+		test[0] = 1;
+		suicide[0] = check(i + 1, j, pt, i, j, debug);
+		if ( suicide[0]!= 0)
+			printf("captured.\n");
+		printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
+	}
+	for (int i = 0; i <= 9; i++)
+		for (int j = 0; j <= 9; j++)
+			debug[i][j] = 0;
+	if (array[i][j - 1] == int(playerturn)*(-1)) {
+		test[1] = 1;
+		suicide[1] = check(i, j - 1, pt, i, j, debug);
+		if (suicide[1] != 0)
+			printf("captured.\n");
+		printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
+	}
+	for (int i = 0; i <= 9; i++)
+		for (int j = 0; j <= 9; j++)
+			debug[i][j] = 0;
+	if (array[i][j + 1] == int(playerturn)*(-1))
+	{
+		test[2] = 1;
+		suicide[2] = check(i, j + 1, pt, i, j, debug);
+			if (suicide[2] != 0)
+				printf("captured.\n");
+			printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
+	}
+	for (int i = 0; i <= 9; i++)
+		for (int j = 0; j <= 9; j++)
+			debug[i][j] = 0;
+	if (array[i - 1][j] == int(playerturn)*(-1))
+	{
+		test[3] = 1;
+		suicide[3] = check(i - 1, j, pt, i, j, debug);
+		if (suicide[3] != 0)
+			printf("captured.\n");
+		printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
+	}
+	bool issuicide = false;
+	for (int i = 0; i < 4; i++)
+		if (suicide[i] != 0)
+			issuicide = true;
+	if (issuicide)
+		printf("not suicide.\n");
+	if (!issuicide)
+		printf("suicide. :D\n");
+
+}
+
 
 void setCircle(int &i, int &j)
 {
@@ -422,7 +520,7 @@ void resize_screen()
 {
 
 	destroy_bitmap(bg_image);//destroy previos bg
-	char name[] = "go_bg2.png";
+	char name[] = "resources/go_bg2.png";
 	al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
 	height = al_get_display_height(al_get_current_display());//height of window
 	width = al_get_display_width(al_get_current_display());//width of window
@@ -505,7 +603,7 @@ int main()
 
 	get_max_screen_size();
 	inits();
-	char name[] = "go_bg2.png";
+	char name[] = "resources/go_bg2.png";
 	bg_image = create_bitmap(name, 0, 0, width, height);
 	ALLEGRO_EVENT_QUEUE *event_queue = al_create_event_queue();
 	//registering event sources
