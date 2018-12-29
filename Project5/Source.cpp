@@ -11,7 +11,7 @@
 #include<math.h>
 #include<string.h>
 #include"GameRules.h"
-
+#include"Audio.h"
 
 //structs
 struct Circle
@@ -256,45 +256,56 @@ void checkenemy(int i, int j, player_turn playerturn) {
 	int debug[10][10] = { 0 };
 	int suicide[4] = { 0 };
 	int test[4] = { 0 };
-	if (array[i + 1][j] == int(playerturn)*(-1))
-	{
-		test[0] = 1;
-		suicide[0] = check(i + 1, j, pt, i, j, debug);
-		if ( suicide[0]!= 0)
-			printf("captured.\n");
-		printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
+	if (i + 1 <= 9) {
+		if (array[i + 1][j] == int(playerturn)*(-1))
+		{
+			test[0] = 1;
+			suicide[0] = check(i + 1, j, pt, i, j, debug);
+			if (suicide[0] != 0)
+				printf("captured.\n");
+			printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
+		}
 	}
 	for (int i = 0; i <= 9; i++)
 		for (int j = 0; j <= 9; j++)
 			debug[i][j] = 0;
-	if (array[i][j - 1] == int(playerturn)*(-1)) {
-		test[1] = 1;
-		suicide[1] = check(i, j - 1, pt, i, j, debug);
-		if (suicide[1] != 0)
-			printf("captured.\n");
-		printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
+	if (j - 1 >= 0)
+	{
+		if (array[i][j - 1] == int(playerturn)*(-1)) {
+			test[1] = 1;
+			suicide[1] = check(i, j - 1, pt, i, j, debug);
+			if (suicide[1] != 0)
+				printf("captured.\n");
+			printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
+		}
 	}
 	for (int i = 0; i <= 9; i++)
 		for (int j = 0; j <= 9; j++)
 			debug[i][j] = 0;
-	if (array[i][j + 1] == int(playerturn)*(-1))
+	if (j + 1 <= 9)
 	{
-		test[2] = 1;
-		suicide[2] = check(i, j + 1, pt, i, j, debug);
+		if (array[i][j + 1] == int(playerturn)*(-1))
+		{
+			test[2] = 1;
+			suicide[2] = check(i, j + 1, pt, i, j, debug);
 			if (suicide[2] != 0)
 				printf("captured.\n");
 			printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
+		}
 	}
 	for (int i = 0; i <= 9; i++)
 		for (int j = 0; j <= 9; j++)
 			debug[i][j] = 0;
-	if (array[i - 1][j] == int(playerturn)*(-1))
+	if (i - 1 >= 0)
 	{
-		test[3] = 1;
-		suicide[3] = check(i - 1, j, pt, i, j, debug);
-		if (suicide[3] != 0)
-			printf("captured.\n");
-		printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
+		if (array[i - 1][j] == int(playerturn)*(-1))
+		{
+			test[3] = 1;
+			suicide[3] = check(i - 1, j, pt, i, j, debug);
+			if (suicide[3] != 0)
+				printf("captured.\n");
+			printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
+		}
 	}
 	bool issuicide = false;
 	for (int i = 0; i < 4; i++)
@@ -348,12 +359,14 @@ void Redraw()
 				setCircle(i, j);//set circle properties
 				destroy_bitmap(nuts_images[i - 1][j - 1]);//destroy previous circle image for memory managment
 				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r, white);
+				
 			}
 			else
 			{
 				destroy_bitmap(nuts_images[i - 1][j - 1]);
 				setCircle(i, j);
 				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r, black);
+				
 			}
 		}
 	}
@@ -380,6 +393,7 @@ void putPieces()
 
 					//save image into an array
 					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r, playerturn);
+					
 					arrayset(array, i, j);
 					checkenemy(i, j, playerturn);
 					turn();//change player turn
@@ -525,6 +539,7 @@ void resize_screen()
 	height = al_get_display_height(al_get_current_display());//height of window
 	width = al_get_display_width(al_get_current_display());//width of window
 	bg_image = create_bitmap(name, 0, 0, width, height);//create a new bg image
+
 	Redraw();
 	al_flip_display();
 }
@@ -604,6 +619,12 @@ int main()
 	get_max_screen_size();
 	inits();
 	char name[] = "resources/go_bg2.png";
+	char audioname[] = "resources/bg.wav";
+	
+	if (loadAuido(audioname))
+		printf("Audio init.\n");
+	if (playAudio(ALLEGRO_PLAYMODE_LOOP))
+		printf("audio played.\n");
 	bg_image = create_bitmap(name, 0, 0, width, height);
 	ALLEGRO_EVENT_QUEUE *event_queue = al_create_event_queue();
 	//registering event sources
