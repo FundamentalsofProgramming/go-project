@@ -44,10 +44,11 @@ int array[10][10] = { 0 }; // column 0 for white and 1 for black
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
 float max_height, max_width;//maximum values of screen
-//int pieces[10][10] = { 0 };
+							//int pieces[10][10] = { 0 };
 ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10];
-
+enum gamestate { menu, ingame, option, about };
+gamestate gs = menu;
 enum player_turn { black = -1, white = 1 };
 //enum player_turn { black = -1, white = 1 };
 player_turn playerturn = white; // we can change who will start the game first here
@@ -57,6 +58,21 @@ void turn() { //changing turns it should be called each time @event manager
 	else
 		playerturn = white;
 }
+
+int passcounter = 0;
+void pass(int passcounter) {
+	if (passcounter == 2)
+		end = true;
+	else
+	{
+		turn();
+		passcounter++;
+	}
+
+}
+
+
+
 
 //void capture(int i,int j,player_turn playerturn) {
 //	int k=0;
@@ -113,10 +129,10 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	char name[30];
 	if (P_turn == black)
 	{
-		strcpy(name, "resources/blackPiece.png");
+		strcpy(name, "blackPiece.png");
 	}
 	else {
-		strcpy(name, "resources/whitePiece.png");
+		strcpy(name, "whitePiece.png");
 	}
 	//set circle center poin in position
 	x -= r;
@@ -127,7 +143,8 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	return image;
 }
 
-int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[][10]) {
+
+int check(int i, int j, player_turn playerturn, int hosti, int hostj, int debug[][10]) {
 	int result[4] = { 0 };
 	if (!(i + 1 == hosti && j == hostj))
 	{
@@ -138,20 +155,20 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[]
 		else if (debug[i + 1][j] != 0)
 		{
 			result[0] = int(playerturn)*(-1);
-			
+
 		}
 		else if (array[i + 1][j] == int(playerturn))
 		{
 			debug[i + 1][j] = 1;
-			result[0] = check(i + 1, j, playerturn, i, j,debug);
-			
+			result[0] = check(i + 1, j, playerturn, i, j, debug);
+
 		}
 		else if (array[i + 1][j] == int(playerturn)*(-1))
 		{
 			debug[i + 1][j] = 1;
 			result[0] = int(playerturn)*(-1);
 		}
-		
+
 		else
 			debug[i + 1][j] = 1;;
 
@@ -164,27 +181,27 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[]
 	}
 	if (!(i == hosti && j + 1 == hostj))
 	{
-		if (i  >= 10 || j+1 >= 10)
+		if (i >= 10 || j + 1 >= 10)
 		{
 			result[1] = int(playerturn)*(-1);
 		}
-		else if (debug[i ][j+1] != 0)
+		else if (debug[i][j + 1] != 0)
 		{
 			result[1] = int(playerturn)*(-1);
 
 		}
 		else if (array[i][j + 1] == int(playerturn))
 		{
-			debug[i ][j+1] = 1;
+			debug[i][j + 1] = 1;
 			result[1] = check(i, j + 1, playerturn, i, j, debug);
 		}
 		else if (array[i][j + 1] == int(playerturn)*(-1))
 		{
-			debug[i ][j+1] = 1;
+			debug[i][j + 1] = 1;
 			result[1] = int(playerturn)*(-1);
 		}
 		else
-			debug[i ][j+1] = 1;;
+			debug[i][j + 1] = 1;;
 	}
 	else
 	{
@@ -193,27 +210,27 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[]
 	if (!(i == hosti && j - 1 == hostj))
 
 	{
-		if (i  >= 10 || j-1 <= -1)
+		if (i >= 10 || j - 1 <= -1)
 		{
 			result[2] = int(playerturn)*(-1);
 		}
-		else if (debug[i ][j-1] != 0)
+		else if (debug[i][j - 1] != 0)
 		{
 			result[2] = int(playerturn)*(-1);
 
 		}
 		else if (array[i][j - 1] == int(playerturn))
 		{
-			debug[i ][j-1] = 1;
+			debug[i][j - 1] = 1;
 			result[2] = check(i, j - 1, playerturn, i, j, debug);
 		}
 		else if (array[i][j - 1] == int(playerturn)*(-1))
 		{
-			debug[i][j-1] = 1;
+			debug[i][j - 1] = 1;
 			result[2] = int(playerturn)*(-1);
 		}
 		else
-			debug[i ][j+1] = 1;;
+			debug[i][j + 1] = 1;;
 	}
 	else
 	{
@@ -221,27 +238,27 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[]
 	}
 	if (!(i - 1 == hosti && j == hostj))
 	{
-		if (i -1 <= -1 || j >= 10)
+		if (i - 1 <= -1 || j >= 10)
 		{
 			result[3] = int(playerturn)*(-1);
 		}
-		else if (debug[i -1][j] != 0)
+		else if (debug[i - 1][j] != 0)
 		{
 			result[3] = int(playerturn)*(-1);
 
 		}
 		else if (array[i - 1][j] == int(playerturn))
 		{
-			debug[i -1][j] = 1;
+			debug[i - 1][j] = 1;
 			result[3] = check(i - 1, j, playerturn, i, j, debug);
 		}
 		else if (array[i - 1][j] == int(playerturn)*(-1))
 		{
-			debug[i-1][j] = 1;
+			debug[i - 1][j] = 1;
 			result[3] = int(playerturn)*(-1);
 		}
 		else
-			debug[i -1][j] = 1;;
+			debug[i - 1][j] = 1;;
 	}
 	else
 	{
@@ -250,6 +267,22 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[]
 	if (result[0] * result[1] * result[2] * result[3] == 0)
 		return 0;
 	else return playerturn;
+}
+void showmsg(player_turn playerturn) {
+	int value; 
+	if (playerturn == 1)//white
+	{
+		value = message_box("do you want to continue?", "white won", "captured");
+		if (value == 2)
+			end = true;
+		
+	}
+	else
+	{
+		value = message_box("do you want to continue?", "BLACK won", "captured");
+		if (value == 2)
+			end = true;
+	}
 }
 void checkenemy(int i, int j, player_turn playerturn) {
 	player_turn pt = playerturn == white ? black : white;
@@ -262,8 +295,9 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			test[0] = 1;
 			suicide[0] = check(i + 1, j, pt, i, j, debug);
 			if (suicide[0] != 0)
-				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
+				showmsg(playerturn);
+				//	printf("captured.\n");
+			//printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
 		}
 	}
 	for (int i = 0; i <= 9; i++)
@@ -275,8 +309,9 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			test[1] = 1;
 			suicide[1] = check(i, j - 1, pt, i, j, debug);
 			if (suicide[1] != 0)
-				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
+				showmsg(playerturn);
+				//printf("captured.\n");
+			//printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
 		}
 	}
 	for (int i = 0; i <= 9; i++)
@@ -289,8 +324,9 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			test[2] = 1;
 			suicide[2] = check(i, j + 1, pt, i, j, debug);
 			if (suicide[2] != 0)
-				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
+				showmsg(playerturn);
+				//printf("captured.\n");
+			//printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
 		}
 	}
 	for (int i = 0; i <= 9; i++)
@@ -303,8 +339,9 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			test[3] = 1;
 			suicide[3] = check(i - 1, j, pt, i, j, debug);
 			if (suicide[3] != 0)
-				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
+				showmsg(playerturn);
+				//printf("captured.\n");
+			//printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
 		}
 	}
 	bool issuicide = false;
@@ -359,14 +396,14 @@ void Redraw()
 				setCircle(i, j);//set circle properties
 				destroy_bitmap(nuts_images[i - 1][j - 1]);//destroy previous circle image for memory managment
 				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r, white);
-				
+
 			}
 			else
 			{
 				destroy_bitmap(nuts_images[i - 1][j - 1]);
 				setCircle(i, j);
 				nuts_images[i - 1][j - 1] = create_circle(circle.center_x, circle.center_y, circle.r, black);
-				
+
 			}
 		}
 	}
@@ -393,7 +430,7 @@ void putPieces()
 
 					//save image into an array
 					nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r, playerturn);
-					
+
 					arrayset(array, i, j);
 					checkenemy(i, j, playerturn);
 					turn();//change player turn
@@ -534,7 +571,7 @@ void resize_screen()
 {
 
 	destroy_bitmap(bg_image);//destroy previos bg
-	char name[] = "resources/go_bg2.png";
+	char name[] = "go_bg2.png";
 	al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
 	height = al_get_display_height(al_get_current_display());//height of window
 	width = al_get_display_width(al_get_current_display());//width of window
@@ -595,6 +632,8 @@ void event_manager(ALLEGRO_EVENT ev)
 			al_destroy_display(al_get_current_display());
 			end = true;
 		}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_SPACE)
+			pass(passcounter);
 	}
 	if (redraw) {
 		redraw = false;
@@ -618,9 +657,9 @@ int main()
 
 	get_max_screen_size();
 	inits();
-	char name[] = "resources/go_bg2.png";
-	char audioname[] = "resources/bg.wav";
-	
+	char name[] = "go_bg2.png";
+	char audioname[] = "bg.wav";
+
 	if (loadAuido(audioname))
 		printf("Audio init.\n");
 	if (playAudio(ALLEGRO_PLAYMODE_LOOP))
