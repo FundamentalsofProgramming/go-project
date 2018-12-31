@@ -127,6 +127,18 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	return image;
 }
 
+void clear_captured_nuts(int arr[][10])
+{
+	for (int i = 0; i < 10; i++)
+	{
+		for (int j = 0; j < 10; j++)
+		{
+
+		}
+	}
+}
+
+
 int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[][10]) {
 	int result[4] = { 0 };
 	if (!(i + 1 == hosti && j == hostj))
@@ -249,7 +261,7 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj,int debug[]
 	}
 	if (result[0] * result[1] * result[2] * result[3] == 0)
 		return 0;
-	else return playerturn;
+	else return int(playerturn);
 }
 void checkenemy(int i, int j, player_turn playerturn) {
 	player_turn pt = playerturn == white ? black : white;
@@ -263,7 +275,7 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			suicide[0] = check(i + 1, j, pt, i, j, debug);
 			if (suicide[0] != 0)
 				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
+			//printf("enemy spotted: (%d, %d) type=%d \n", i + 1, j, int(playerturn)*(-1));
 		}
 	}
 	for (int i = 0; i <= 9; i++)
@@ -276,7 +288,7 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			suicide[1] = check(i, j - 1, pt, i, j, debug);
 			if (suicide[1] != 0)
 				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
+			//printf("enemy spotted: (%d, %d) type=%d \n", i, j - 1, int(playerturn)*(-1));
 		}
 	}
 	for (int i = 0; i <= 9; i++)
@@ -290,7 +302,7 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			suicide[2] = check(i, j + 1, pt, i, j, debug);
 			if (suicide[2] != 0)
 				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
+			//printf("enemy spotted: (%d, %d) type=%d \n", i, j + 1, int(playerturn)*(-1));
 		}
 	}
 	for (int i = 0; i <= 9; i++)
@@ -304,17 +316,17 @@ void checkenemy(int i, int j, player_turn playerturn) {
 			suicide[3] = check(i - 1, j, pt, i, j, debug);
 			if (suicide[3] != 0)
 				printf("captured.\n");
-			printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
+			//printf("enemy spotted: (%d, %d) type=%d \n", i - 1, j, int(playerturn)*(-1));
 		}
 	}
 	bool issuicide = false;
 	for (int i = 0; i < 4; i++)
 		if (suicide[i] != 0)
 			issuicide = true;
-	if (issuicide)
-		printf("not suicide.\n");
-	if (!issuicide)
-		printf("suicide. :D\n");
+	//if (issuicide)
+		//printf("not suicide.\n");
+	//if (!issuicide)
+		//printf("suicide. :D\n");
 
 }
 
@@ -594,6 +606,12 @@ void event_manager(ALLEGRO_EVENT ev)
 		{
 			al_destroy_display(al_get_current_display());
 			end = true;
+		}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_M)
+		{
+		 	muteAudio();
+			//pauseAudio();
+			//stopAudio();
 		}
 	}
 	if (redraw) {
