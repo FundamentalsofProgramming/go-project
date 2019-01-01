@@ -12,6 +12,7 @@
 #include<string.h>
 #include"GameRules.h"
 #include"Audio.h"
+#include "button.h"
 
 //structs
 struct Circle
@@ -41,35 +42,56 @@ void resize_screen();
 
 //global Variables
 int array[10][10] = { 0 }; // column 0 for white and 1 for black
+
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
+//player_turn playerturn = white; // we can change who will start the game first here
+int passcounterw = 0, passcounterb = 0; //pass counters for saving turn and etc.
 float max_height, max_width;//maximum values of screen
 							//int pieces[10][10] = { 0 };
 ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10];
+enum player_turn { black = -1, white = 1 };//enum player_turn { black = -1, white = 1 };
+player_turn playerturn = white;
 enum gamestate { menu, ingame, option, about };
 gamestate gs = menu;
-enum player_turn { black = -1, white = 1 };
-//enum player_turn { black = -1, white = 1 };
-player_turn playerturn = white; // we can change who will start the game first here
-void turn() { //changing turns it should be called each time @event manager
+
+
+void turn() { //changing turns it should be called each time @ event manager
 	if (playerturn == white)
 		playerturn = black;
 	else
 		playerturn = white;
 }
 
-int passcounter = 0;
-void pass(int passcounter) {
-	if (passcounter == 2)
-		end = true;
+
+void pass(player_turn playerturn) { // this function will add the pass rule to the game 
+	
+	if (playerturn == white)
+	{
+		passcounterw++;
+		turn();
+	}
 	else
 	{
+		passcounterb++;
 		turn();
-		passcounter++;
+	}
+	if (passcounterb == 1 && passcounterw == 1)
+		end = true;
+
+	if (passcounterb > 1 && passcounterw==0)
+	{
+		passcounterb = 0;
+		passcounterw = 0;
+	}
+	if (passcounterw > 1 && passcounterb==0)
+	{
+		passcounterw = 0;
+		passcounterb = 0;
+	}
 	}
 
-}
 
 
 
@@ -633,7 +655,12 @@ void event_manager(ALLEGRO_EVENT ev)
 			end = true;
 		}
 		else if (ev.keyboard.keycode == ALLEGRO_KEY_SPACE)
-			pass(passcounter);
+		{
+			
+		
+			pass(playerturn);
+			
+		}
 	}
 	if (redraw) {
 		redraw = false;
