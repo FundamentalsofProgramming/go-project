@@ -12,14 +12,25 @@
 #include<string.h>
 #include"GameRules.h"
 #include"Audio.h"
-#include "button.h"
+//#include "button.h"
 #include <time.h>
 #include <stdlib.h>
 #include "Group.h"
+#include"SaveAndLoad.h"
 
 
-
-
+//struct button that holds our buttons properties
+struct Button
+{
+	float sti, endi;
+	float stj, endj;
+};
+Button _button[6];//an array of button in game note that you can increse it size base on buttons you have
+//button enum for beauti and easy acces to struct array
+enum buttons
+{
+	Startbtn=0,aboutbtn=1,exitbtn=2,singleplayerbtn=3,twoplayerbtn=4
+};
 
 //structs
 struct Circle
@@ -38,9 +49,12 @@ struct Mouse
 
 //functions prototype
 ALLEGRO_BITMAP *create_bitmap(char[], float, float, int, int);
+ALLEGRO_BITMAP *create_bitmap(const char image_name[], float x, float y, int width, int height);
 void destroy_bitmap(ALLEGRO_BITMAP*);
 void ai(int [][10], int &, int &);
 ALLEGRO_BITMAP *create_circle(float, float, float);
+void buttonSence();
+void configureBtn();
 bool isinrange(int &, int &);
 int message_box(const char*,
 	const char*,
@@ -68,38 +82,12 @@ player_turn playerturn = white;
 enum gamestate { menu, singleplayer, twoplayer, about }_gamestate;//mix
 gamestate gs = menu;
 
-void changeScreen()
-{
-	char bgname[30] = { 0 };
-	destroy_bitmap(bg_image);
-	switch (_gamestate)
-	{
-	case menu:
-		strcpy(bgname, "resources/MainMenu.png");
-		bg_image = create_bitmap(bgname, 0, 0, width, height);
-		break;
-	case singleplayer:
-		strcpy(bgname, "resources/go_bg2.png");
-		bg_image = create_bitmap(bgname, 0, 0, width, height);
-		break;
-	case twoplayer:
-		strcpy(bgname, "resources/go_bg.png");
-		bg_image = create_bitmap(bgname, 0, 0, width, height);
-		break;
-	case about:
-		strcpy(bgname, "resources/About.png");
-		bg_image = create_bitmap(bgname, 0, 0, width, height);
-		break;
-	default:
-		break;
-	}
 
-	resize_screen();
-}//mix
 void changeState(gamestate gs) //mix
 {
 	_gamestate = gs;
-	changeScreen();
+	//changeScreen(gs);
+	//_button[buttons::Start];
 
 }
 
@@ -737,10 +725,10 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	char name[30];
 	if (P_turn == black)
 	{
-		strcpy(name, "blackPiece.png");
+		strcpy(name, "resources/blackPiece.png");
 	}
 	else {
-		strcpy(name, "whitePiece.png");
+		strcpy(name, "resources/whitePiece.png");
 	}
 	//set circle center poin in position
 	x -= r;
@@ -1192,6 +1180,20 @@ ALLEGRO_BITMAP *create_bitmap(char image_name[], float x, float y, int width, in
 	al_flip_display();
 	return image;
 }
+ALLEGRO_BITMAP *create_bitmap(const char image_name[], float x, float y, int width, int height) {
+	ALLEGRO_BITMAP *image = NULL;
+	image = al_load_bitmap(image_name);
+	al_draw_scaled_bitmap(image,
+		0, 0, // source origin
+		al_get_bitmap_width(image), // source width
+		al_get_bitmap_height(image), // source height
+		x, y, // target origin
+		width, height, // target dimensions
+		0 // flags
+	);
+	al_flip_display();
+	return image;
+}
 //get max width and height of screen at start of program
 void get_max_screen_size()
 {
@@ -1243,14 +1245,34 @@ void resize_screen()
 {
 
 	destroy_bitmap(bg_image);//destroy previos bg
-	char name[] = "go_bg2.png";
+	char name[30];
+	switch (_gamestate)
+	{
+	case menu:
+		strcpy(name, "resources/Mainmenu.png");
+		break;
+	case singleplayer:
+		strcpy(name, "resources/go_bg2.png");
+		break;
+	case twoplayer:
+		strcpy(name, "resources/go_bg2.png");
+		break;
+	case about:
+		strcpy(name, "resources/About.png");
+		break;
+	default:
+		break;
+	}
+	
+	//create_bitmap("sfa", 0, 0, 0, 0);
 	al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
 	height = al_get_display_height(al_get_current_display());//height of window
 	width = al_get_display_width(al_get_current_display());//width of window
 	bg_image = create_bitmap(name, 0, 0, width, height);//create a new bg image
-
-	Redraw();
+	if(_gamestate==gamestate::singleplayer||_gamestate==gamestate::twoplayer)
+		Redraw();
 	al_flip_display();
+	configureBtn();
 }
 //control events
 void event_manager(ALLEGRO_EVENT ev)
@@ -1279,7 +1301,11 @@ void event_manager(ALLEGRO_EVENT ev)
 		{
 			mouse.posx = ev.mouse.x;
 			mouse.posy = ev.mouse.y;
-			putPieces();//call put function
+			//printf("x:%f\n", mouse.posx);
+			//printf("y:%f\n", mouse.posy);
+			buttonSence();
+			if(_gamestate==gamestate::singleplayer||_gamestate==gamestate::twoplayer)
+				putPieces();//call put function
 		}
 		/*else if (ev.mouse.button == 2)//this in test progress
 		{
@@ -1330,30 +1356,119 @@ void inits()
 	al_install_keyboard();
 	init_display(0);
 }
+
+
+//test proces
+void changeScreen(gamestate gs)
+{
+	char bgname[30] = { 0 };
+	destroy_bitmap(bg_image);
+	switch (gs)
+	{
+	case menu:
+		
+		strcpy(bgname, "resources/Mainmenu.png");
+		bg_image = create_bitmap(bgname, 0, 0, width, height);
+		break;
+	case singleplayer:
+		strcpy(bgname, "resources/go_bg2.png");
+		bg_image = create_bitmap(bgname, 0, 0, width, height);
+		break;
+	case twoplayer:
+		strcpy(bgname, "resources/go_bg.png");
+		bg_image = create_bitmap(bgname, 0, 0, width, height);
+		break;
+	case about:
+		strcpy(bgname, "resources/About.png");
+		bg_image = create_bitmap(bgname, 0, 0, width, height);
+		break;
+	default:
+		break;
+	}
+	_gamestate = gs;
+
+	resize_screen();
+}//mix
+
+//check taht button is pressed
+bool isButtonPressed(Button btn)
+{
+	if (mouse.posx >= btn.sti&&mouse.posx <= btn.endi)//check x position
+	{
+		if (mouse.posy >= btn.stj&&mouse.posy <= btn.endj)//check y position
+			return true;
+	}
+	return false;
+}
+//button manager :D
+void buttonSence()
+{
+	switch (_gamestate)//make sure that buttons in the exact scene is checked
+	{
+	case menu:
+		if (isButtonPressed(_button[buttons::Startbtn]))
+		{
+			printf("Start.\n");
+		}
+		else if (isButtonPressed(_button[buttons::aboutbtn]))
+		{
+			printf("About.\n");
+		}
+		else if (isButtonPressed(_button[buttons::exitbtn]))
+		{
+			printf("Exit.\n");
+		}
+		break;
+	case singleplayer:
+		break;
+	case twoplayer:
+		break;
+	case about:
+		break;
+	default:
+		break;
+	}
+}
+//configure button position based on screen size :D
+void configureBtn()
+{
+	for (int i = 0; i < 3; i++)//main menu buttons
+	{
+		_button[i].sti = width / 21 * 8;
+		_button[i].endi = width / 21 * 13;
+		_button[i].stj = height / 20 * (4 * (i + 1) + 1);//these are formuls that we create buttons based on
+		_button[i].endj = height / 20 * (4*(i+2)-1)-5;//these are formuls that we create buttons based on
+	}
+}
 int main()
 {
+	
+	_gamestate = gamestate::menu;
 	komi(whitescore,blackscore, playerturn);
 	//init seed
 	srand(time(NULL));
 	get_max_screen_size();
 	inits();
-	char name[] = "go_bg2.png";
-	char audioname[] = "bg.wav";
+	configureBtn();
+	char name[] = "resources/Mainmenu.png";
+	char audioname[] = "resources/bg.wav";
 
 	if (loadAuido(audioname))
 	printf("Audio init.\n");
 	if (playAudio(ALLEGRO_PLAYMODE_LOOP))
 	printf("audio played.\n");
+
 	bg_image = create_bitmap(name, 0, 0, width, height);
 	ALLEGRO_EVENT_QUEUE *event_queue = al_create_event_queue();
 	//registering event sources
 	al_register_event_source(event_queue, al_get_display_event_source(al_get_current_display()));//display source
 	al_register_event_source(event_queue, al_get_mouse_event_source());//mouse source
-	al_register_event_source(event_queue, al_get_keyboard_event_source());//keyboard source
+	al_register_event_source(event_queue, al_get_keyboard_event_source());//keyboard source	
 
 
 
-																		  //main loop
+	//changeScreen(gamestate::about);
+	//main loop
 	while (!end)
 	{
 
