@@ -139,6 +139,10 @@ void deleteGroup(int i,int j,int array[][10])
 		}
 	}
 }
+int gettoken(int i, int j)
+{
+	return _group[i][j].token;
+}
 void deleteGroup(int token)
 {
 
