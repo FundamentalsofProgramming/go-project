@@ -16,6 +16,8 @@ void addGroup(int token, int tokento);
 void addGroup(int i, int j, int token);
 */
 int gettoken(int, int);
+void settoken(int i, int j, int token);
+bool getGroupBlock(int i, int j);
 int getColorOfGroup(int i, int j);
 void setGroupBlock(int i, int j, blocktype bl, bool isbolck);
 bool checkGrouping(int i, int j, int color, int array[][10]);

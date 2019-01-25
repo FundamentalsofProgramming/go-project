@@ -143,6 +143,12 @@ int gettoken(int i, int j)
 {
 	return _group[i][j].token;
 }
+void settoken(int i, int j,int token)
+{
+	_group[i][j].token = token;
+	if (token / 10 > usednumber)
+		usednumber = token / 10;
+}
 void deleteGroup(int token)
 {
 
@@ -150,6 +156,9 @@ void deleteGroup(int token)
 void printgroup()
 {
 
+}
+bool getGroupBlock(int i, int j) {
+	return _group[i][j].isBlocked;
 }
 void setGroupBlock(int i,int j,blocktype bl,bool isbolck)
 {
