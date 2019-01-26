@@ -9,8 +9,36 @@ ALLEGRO_TIMER *getTimer()
 {
 	return timer;
 }
-
-
+//get number of packs that player have
+int getPacks(int playercolor)
+{
+	switch (playercolor)
+	{
+	case -1:
+		return blackpacks;
+		break;
+	case 1:
+		return whitepacks;
+		break;
+	default:
+		break;
+	}
+}
+//set player packs
+void setPacks(int num,int playercolor)
+{
+	switch (playercolor)
+	{
+	case -1:
+		blackpacks = num;
+		break;
+	case 1:
+		whitepacks = num;
+		break;
+	default:
+		break;
+	}
+}
 
 bool startTimer(int playercolor)
 {
@@ -54,6 +82,7 @@ bool checktime(int playercolor)
 {
 	if (al_get_timer_count(timer) >= 300) //checl if its more than 80(optional)
 	{
+		
 		printf("Timed pass.\n");
 		switch (playercolor)
 		{
