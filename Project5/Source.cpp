@@ -7,31 +7,27 @@
 #include<allegro5\allegro_audio.h>
 #include <allegro5/allegro_color.h>
 #include<allegro5\fullscreen_mode.h>
-//#include<allegro5\bitmap_draw.h>
-
-//#include<stdio.h>
+#include<stdio.h>
 #include<math.h>
 #include <allegro5\allegro_font.h>
 #include <allegro5\allegro_ttf.h>
-//#include<string.h>
+#include<string.h>
 #include"GameRules.h"
 #include"Audio.h"
-//#include "button.h"
-//#include <time.h>
 #include <stdlib.h>
 #include "Group.h"
-#include"SaveAndLoad.h"
+//#include"SaveAndLoad.h"//we are not using this lib because of some resons
 #include<allegro5\timer.h>
 #include"Timer.h"
-#include<exception>
-//#include<allegro5\timer.h>
-
+#include<exception>//we used this for some tests
+#include<conio.h>
+#include<stdlib.h>
 
 //struct button that holds our buttons properties
 struct Button
 {
-	float sti, endi;
-	float stj, endj;
+	float sti, endi;//x coordinates
+	float stj, endj;//y coordinates
 };
 Button _button[10];//an array of button in game note that you can increse it size base on buttons you have
 //button enum for beauti and easy acces to struct array
@@ -39,7 +35,10 @@ enum buttons
 {
 	Startbtn=0,aboutbtn=1,exitbtn=2,singleplayerbtn=3,twoplayerbtn=4,backbtn=5,loadbtn=6
 };
-
+struct keyboard {//coordinates for hover and etc
+	int posx;
+	int posy;
+}makan;
 //structs
 struct Circle
 {
@@ -54,11 +53,11 @@ struct Mouse
 }mouse;
 
 //global Variables
-int aidebug[10][10] = { 0 };
-int ib = 0, jb = 0, iw = 0, jw = 0;
+int aidebug[10][10] = { 0 };//used in charjahat
+int ai_try = 0;//used in putPieces  suicide to limit ai try for random numbers
+int ib = 0, jb = 0, iw = 0, jw = 0;//where ai want to put his decision
 int array[10][10] = { 0 }; // 0 empty 1 white -1 black
-int whitescore = 0, blackscore = 0;
-int aicounter = 0;
+int whitescore = 0, blackscore = 0;//keep scores of players
 //int score[2]; //0 for black and 1 for white 
 bool end = false, redraw = true;//end:ending the main loop
 float height, width;//value of current window pannel
@@ -70,46 +69,84 @@ ALLEGRO_BITMAP *bg_image;
 ALLEGRO_BITMAP *nuts_images[10][10];
 enum player_turn { black = -1, white = 1 };//enum player_turn { black = -1, white = 1 };
 player_turn playerturn = white;
-enum gamestate { menu, singleplayer, twoplayer, about, startbranch }_gamestate;//mix
+enum gamestate { menu, singleplayer, twoplayer, about, startbranch,GameOver }_gamestate;//mix
 gamestate gs = menu;
 ALLEGRO_BITMAP *turnshow = NULL;
+ALLEGRO_BITMAP *hovershow = NULL;
+
 
 //functions prototype
-ALLEGRO_BITMAP *create_bitmap(char[], float, float, int, int);
-ALLEGRO_BITMAP *create_bitmap(const char image_name[], float x, float y, int width, int height);
-void destroy_bitmap(ALLEGRO_BITMAP*);
-void ai(int [][10], int &, int &);
-ALLEGRO_BITMAP *create_circle(float, float, float);
-void buttonSence();
-void configureBtn();
-bool isinrange(int &, int &);
-void print_text(const char text[], int x, int y, int R=255 , int G=255 , int B=255 , const char font_name[]="resources/arial.ttf" );
+ALLEGRO_BITMAP *create_bitmap(char[], float, float, int, int);									//create an image
+ALLEGRO_BITMAP *create_bitmap(const char image_name[], float x, float y, int width, int height);//on screen
+void destroy_bitmap(ALLEGRO_BITMAP*);//destroy a bitmap
+void ai(int [][10], int &, int &);//one of function of ai
+//ALLEGRO_BITMAP *create_circle(float, float, float);
+void buttonSence();//button manager
+void configureBtn();//configure button coordinates based on screen size
+bool isinrange(int &, int &);//check if mouse is in our board or not
+void print_text(const char text[], int x, int y, int R=255 , int G=255 , int B=255 , const char font_name[]="arial.ttf" );
 int message_box(const char*,
 	const char*,
 	const char*);
-void resize_screen();
-void Redraw(); //mix
-void changeScreen(gamestate gs);
+void resize_screen();//will resize screen and call redraw function
+void Redraw(); //redraw the screen with array
+void changeScreen(gamestate gs);//change the game state
+void scoring(int array[][10], int &blackScore, int &whiteScore);//calculate players's scores whenever game over
+void putPieces();//almost function and put white and black pieces on the board on game state
 
+//show the gameover scene when game is ended
+void gameover()
+{
+	playAudio(Audios::Gameover, ALLEGRO_PLAYMODE_ONCE);
+	stopAudio(Audios::bgAu);
+	char *temp=new char[8];
+	char win[20] = "winner is ";
+	changeScreen(gamestate::GameOver);
+	scoring(array, blackscore, whitescore);
+	char blacktext[20] = "BlackScore is:", whitetext[20] = "WhiteScore is:";
+	itoa(blackscore, temp, 10);
+	strcat(blacktext,temp );
+	itoa(whitescore, temp, 10);
+	strcat(whitetext, temp);
+	strcat(whitetext, ".5");
+	print_text(blacktext, width / 21 * 10, height / 20 * 10);
+	print_text(whitetext, width / 21 * 10, height / 20 * 13);
+	if (blackscore > whitescore) {
+		strcat(win, "black");
+	}
+	else {
+		strcat(win, "white");
+	}
+	
+	print_text(win, width / 21 * 10, height / 20 * 15);
 
-
+}
+//update the console 
+void UpdateConsole()
+{
+	system("CLS");
+	printf("BlackPacks:%d\n", getPacks(black));
+	printf("WhitePacks:%d\n", getPacks(white));
+	playAudio(Audios::clockAu, ALLEGRO_PLAYMODE::ALLEGRO_PLAYMODE_ONCE);
+	printf("Timer Count:%.1f\n", getTime()/10.0f);
+}
+//show the turn player on the top left
 void turnShow()
 {
 	destroy_bitmap(turnshow);
 	switch (playerturn)
 	{
 	case black:
-		turnshow= create_bitmap("resources/blackPiece.png", 0, 0, width / 21 * 1, height / 20 * 1);
+		turnshow= create_bitmap("blackPiece.png", 0, 0, width / 21 * 1, height / 20 * 1);
 		break;
 	case white:
-		turnshow = create_bitmap("resources/whitePiece.png", 0, 0, width / 21 * 1, height / 20 * 1);
+		turnshow = create_bitmap("whitePiece.png", 0, 0, width / 21 * 1, height / 20 * 1);
 		break;
 	default:
 		break;
 	}
-
 }
-
+//not working yet
 void deadones(int array[][10],player_turn playerturn) { // mohre haye morde
 	int cpyarr[10][10];
 	for(int i=0;i<=9;i++)
@@ -118,48 +155,22 @@ void deadones(int array[][10],player_turn playerturn) { // mohre haye morde
 			if (cpyarr[i][j] == int(playerturn)|| cpyarr[i][j] == 0)
 				cpyarr[i][j] = int(playerturn)*-1;
 		}
-
 }
+//give an extra score to player who plays first
 void komi(int &whitescore,int &blackscore, int playerturn) { //meghdar komi baraye shoroo konande
 	if (playerturn == white)
 		whitescore += 6.5;
 	else
 		blackscore += 6.5;
-	
-	
 }
+
 void turn() { //changing turns it should be called each time @ event manager
 	if (playerturn == white)
 		playerturn = black;
 	else
 		playerturn = white;
 	turnShow();
-	//startTimer(playerturn);
 }
-char *ftoa(float number,int deghatP,int deghati)
-{
-	char *buffer = NULL;
-	int temp1, temp2;
-	temp1 = (int)(number * pow(10, deghatP)) % ((int)pow(10,deghatP));
-	temp2 = number;
-	buffer = new char[deghati+deghatP+2];
-	int counter = 0;
-	while (temp2!=0)
-	{
-		buffer[counter] = temp2 % 10 + '0';
-		temp2 /= 10;
-		counter++;
-	}
-	buffer[counter] = '.';
-	while (temp1!=0)
-	{
-		buffer[counter] = temp1 % 10 + '0';
-		temp1 /= 10;
-		counter++;
-	}
-	return buffer;
-}
-
 void pass(player_turn playerturn) { // this function will add the pass rule to the game 
 	
 	if (playerturn == white)
@@ -170,23 +181,38 @@ void pass(player_turn playerturn) { // this function will add the pass rule to t
 	}
 	else
 	{
+		
 		passcounterb++;
 		turn();
 	}
+	
 	stopTimer();
 	startTimer(playerturn);
 	if (passcounterb == 1 && passcounterw == 1)
-		end = true;
+		gameover();
 
-	if (passcounterb > 1 && passcounterw == 0)
+	if (passcounterb > 1 && passcounterw == 0)//black pass but white doesn't
 	{
 		passcounterb = 0;
 		passcounterw = 0;
 	}
-	if (passcounterw > 1 && passcounterb == 0)
+	if (passcounterw > 1 && passcounterb == 0)//white pass but black doesn't
 	{
 		passcounterw = 0;
 		passcounterb = 0;
+	}
+	if (_gamestate == gamestate::singleplayer)//this part will be activate in single mode
+	{
+		if (playerturn == player_turn::white)
+		{
+			scoring(array, blackscore, whitescore);
+			if (blackscore > whitescore )
+				pass(black);
+			else
+			{
+				putPieces();
+			}
+		}
 	}
 }
 
@@ -199,6 +225,9 @@ int overflow(int parameter, int min, int max) { //false for overflow
 
 void scoring(int array[][10],int &blackscore,int &whitescore)
 {
+	whitescore = 0;
+	blackscore = 0;
+	komi(whitescore, blackscore, white);
 	int i = 0;
 	int j = 0;
 	deadones(array,playerturn);
@@ -213,14 +242,7 @@ void scoring(int array[][10],int &blackscore,int &whitescore)
 	}
 
 }
-
-
-void Territory() // n for neutral 1for white and -1 for black
-{}
-
-
-
-
+//find a black pieces whenever you put a white pieces
 int checkwhiteenemy(int i, int j, int array[][10], int &ib, int &jb) {
 	if (overflow(i, 0, 9) && overflow(j, 0, 9))
 	{
@@ -252,11 +274,10 @@ int checkwhiteenemy(int i, int j, int array[][10], int &ib, int &jb) {
 
 }
 
-
+//this is an extra mode for ai and it will make eyes if you don't put near black pieces
 void eyemaker(int array[][10], int &ib, int &jb, int initiali, int initialj) {
 	int i = 0, j = 0, sw = 0, check0 = 0;
 	sw = 0;
-	
 	for (initiali; initiali <= 9; initiali++)
 	{
 		if (initialj > 9) initialj = 0;
@@ -266,7 +287,6 @@ void eyemaker(int array[][10], int &ib, int &jb, int initiali, int initialj) {
 				sw = 1;
 				break;
 			}
-
 		}
 		if (sw == 1) break;
 	}
@@ -274,8 +294,6 @@ void eyemaker(int array[][10], int &ib, int &jb, int initiali, int initialj) {
 	if (overflow(initiali + 1, 0, 9)) {
 		if (array[initiali + 1][initialj] == 0 || array[initiali + 1][initialj] == -1) { check0 = 1; }
 		else check0 = 0;
-		//else if (array[i + 1][j] == 1) sw = 1;
-
 	}
 	if (overflow(initiali - 1, 0, 9) && check0 == 1) {
 		if (array[initiali - 1][initialj] == 0 || array[initiali - 1][initialj] == -1) { check0 = 1; }
@@ -321,16 +339,13 @@ void eyemaker(int array[][10], int &ib, int &jb, int initiali, int initialj) {
 				ib = initiali+1;
 				jb = initialj ;
 			}
-		/*if (ib == initiali&&jb == initialj) {
-			eyemaker(array, ib, jb, initiali, initialj + 1);
-		}*/
 	}
 
 }
 
 
 
-
+//return token of the first white's group that it finds
 int findwhitegp(int &iw,int &jw,int startpointi,int startpointj ){
 	int sw = 0;
 	int i = 0;
@@ -350,7 +365,6 @@ int findwhitegp(int &iw,int &jw,int startpointi,int startpointj ){
 	if (i > 9 || j > 9) {
 		iw = rand() % 10;
 		jw = rand() % 10;
-	//	pass(playerturn);
 		return 0;
 	}
 	else
@@ -361,8 +375,8 @@ int findwhitegp(int &iw,int &jw,int startpointi,int startpointj ){
 	}
 		
 }
-
-int offrecresive(int i,int j,int array[][10]) { // mire mohre ro capture mikone  
+//it's a recersive func for offensive mode of ai
+int offrecersive(int i,int j,int array[][10]) { // mire mohre ro capture mikone  
 	int swo=0;
 	if (overflow(i + 1, 0, 9)) 
 		if (array[i + 1][j] == 0)
@@ -405,30 +419,20 @@ int offrecresive(int i,int j,int array[][10]) { // mire mohre ro capture mikone
 	}
 	
 }
-
+//try to capture white player when ai is not defending
 void offensive(int array[][10], int &ib, int &jb, int startpointi, int startpointj)
 {
 	int i, j,y=0,x=0;
 	int token;
 	token = findwhitegp(iw, jw,startpointi,startpointj);
-	/*for (i = 0; i <= 9; i++) {
-		for (j = 0; j <= 9; j++)
-		{
-			if (gettoken(i, j) == token) {
-				sw = 1;
-				break;
-			}
-		}
-		if (sw == 1) break;
-	}*/
-	y=offrecresive(iw, jw, array);
+	y= offrecersive(iw, jw, array);
 	if (!y) {
 		x = jw + 1;
 		offensive(array, iw, jw,iw,x);
 	}
 
 }
-
+//find a place in a group of black Pieces with more liberty
 int neighbourprio(int &ib, int &jb, int array[][10]) {
 	int counterbala = 0, counterpayin = 0, counterrast = 0, counterchap = 0, ibala = 0, ipayin = 0, ichap = 0, irast = 0;
 	int jbala = 0, jpayin = 0, jchap = 0, jrast = 0;
@@ -440,29 +444,17 @@ int neighbourprio(int &ib, int &jb, int array[][10]) {
 		{
 			irast = ib;
 			jrast = jb + 1;
-
-
-			if (array[ib - 1][jb + 1] == 0)//&& sw1 == 0)
+			if (array[ib - 1][jb + 1] == 0)
 			{
-				//irast--;
 				counterrast++;
-				//sw1 = 1;
 			}
-			if (array[ib + 1][jb + 1] == 0)//&& sw1 == 0)
+			if (array[ib + 1][jb + 1] == 0)
 			{
-				//irast++;
 				counterrast++;
-				//sw1 = 1;
 			}
-			if (array[ib][jb + 2] == 0)//&& sw1 == 0)
+			if (array[ib][jb + 2] == 0)
 			{
-				//jrast++;
 				counterrast++;
-				//sw1 = 1;
-			}
-			else
-			{
-				//	jb++;
 			}
 		}
 	}
@@ -472,28 +464,20 @@ int neighbourprio(int &ib, int &jb, int array[][10]) {
 		{
 			ichap = ib;
 			jchap = jb - 1;
-			if (array[ib - 1][jb - 1] == 0)//&& sw2 == 0)
+			if (array[ib - 1][jb - 1] == 0)
 			{
-				//ichap--;
 				counterchap++;
-				//sw2 = 1;
 			}
-			if (array[ib + 1][jb - 1] == 0)//&& sw2 == 0)
+			if (array[ib + 1][jb - 1] == 0)
 			{
-				//ichap++;
+
 				counterchap++;
-				//sw2 = 1;
 			}
-			if (array[ib][jb - 2] == 0)//&& sw2 == 0)
+			if (array[ib][jb - 2] == 0)
 			{
-				//jchap--;
 				counterchap++;
-				//sw2 = 1;
 			}
-			else
-			{
-				//jb--;
-			}
+
 		}
 	}
 	int sw3 = 0;
@@ -502,61 +486,38 @@ int neighbourprio(int &ib, int &jb, int array[][10]) {
 		{
 			ipayin = ib + 1;
 			jpayin = jb;
-			if (array[ib + 1][jb + 1] == 0)//&& sw3 == 0)
+			if (array[ib + 1][jb + 1] == 0)
 			{
-
-				//	jpayin++;
 				counterpayin++;
-				//sw3 = 1;
 			}
-			if (array[ib + 1][jb - 1] == 0)//&& sw3 == 0)
+			if (array[ib + 1][jb - 1] == 0)
 			{
-				//ib++;
-				//jpayin--;
 				counterpayin++;
-				//sw3 = 1;
 			}
-			if (array[ib + 2][jb] == 0)//&& sw3 == 0)
+			if (array[ib + 2][jb] == 0)
 			{
-				//ipayin++;
-				counterpayin++;
-				//sw3 = 1;
+			counterpayin++;
+			
 			}
-			else
-			{
-				//ib++;
-			}
+			
 		}
 	}
-	int sw4 = 0;
-	if (overflow(ib - 1, 0, 9) && overflow(jb + 1, 0, 9) && sw4 == 0) {
+	if (overflow(ib - 1, 0, 9) && overflow(jb + 1, 0, 9)) {
 		if (array[ib - 1][jb] == 0)
 		{
 			ibala = ib - 1;
 			jbala = jb;
-			if (array[ib - 1][jb + 1] == 0) //&& sw4 == 0)
+			if (array[ib - 1][jb + 1] == 0)
 			{
-
-				//jbala++;
 				counterbala++;
-				//sw4 = 1;
 			}
-			else if (array[ib - 1][jb - 1] == 0) //&& sw4 == 0)
+			else if (array[ib - 1][jb - 1] == 0)
 			{
-
-				//jbala--;
 				counterbala++;
-				//sw4 = 1;
 			}
-			else if (array[ib - 2][jb] == 0)//&& sw4 == 0)
+			else if (array[ib - 2][jb] == 0)
 			{
-				//ibala--;
 				counterbala++;
-				//sw4 = 1;
-			}
-			else
-			{
-				//ib--;
 			}
 		}
 	}
@@ -609,22 +570,17 @@ int neighbourprio(int &ib, int &jb, int array[][10]) {
 			ib = ipayin;
 			jb = jpayin;
 		}
-		//else if()
-	
 		else { // masaln countere bala va payin dotashoon 1beshan
 			//ib = rand() % 10;
 			//jb = rand() % 10;
 			offensive(array, ib, jb, 0, 0);
-			return 1;
-			
-			
+			return 1;			
 			//eyemaker(array, ib, jb, 1, 1 );
 			
 		}
-		//if (counterbala == counterchap) {}
 	}
 }
-
+//this is main ai func and it decide between two logics
 void checkpriority(int array[][10], int i, int j, int &ib, int &jb) {
 	int x,y;
 	x = checkwhiteenemy(i - 1, j - 1, array, ib, jb);// ib va jb dakhel array ro mide
@@ -653,6 +609,7 @@ void checkpriority(int array[][10], int i, int j, int &ib, int &jb) {
 	}
 
 }
+
 int charjahat(int i1, int j1,int array[][10]) { //in tabe check mikone bebine kenare khoone i j khali voojooddarad ya na
 	int sw=0;
 	if (aidebug[i1][j1] == 1) return 0; // bastas va ghablan check shode
@@ -687,9 +644,7 @@ int charjahat(int i1, int j1,int array[][10]) { //in tabe check mikone bebine ke
 		return 0;//4tarafash baste ast
 	}
 	}
-
-
-
+//will be called @ neighbourprio
 void ai(int array[][10], int &ib, int &jb) {
 	int token,sw1=0;
 	int i1, j1;
@@ -742,12 +697,12 @@ void ai(int array[][10], int &ib, int &jb) {
 
 }
 
-
 int arraycheck(int array[][10], int i, int j) { // i and j will be defined @event manager (they declare coordinates)
 	if (array[i][j] == 0) return 0;
 	else if (array[i][j] == 1) return 1;
 	else return -1;
 }
+
 void arrayset(int array[][10], int i, int j) {// i and j will be defined @event manager (they declare coordinates)
 	if (playerturn == white)
 	{
@@ -761,10 +716,6 @@ void arrayset(int array[][10], int i, int j) {// i and j will be defined @event 
 	}
 }
 
-
-
-
-
 //draw a circle bitmap 
 ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 {
@@ -772,10 +723,10 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 	char name[30];
 	if (P_turn == black)
 	{
-		strcpy(name, "resources/blackPiece.png");
+		strcpy(name, "blackPiece.png");
 	}
 	else {
-		strcpy(name, "resources/whitePiece.png");
+		strcpy(name, "whitePiece.png");
 	}
 	//set circle center poin in position
 	x -= r;
@@ -785,29 +736,28 @@ ALLEGRO_BITMAP *create_circle(float x, float y, float r, player_turn P_turn)
 
 	return image;
 }
-
-
-int check(int i, int j, player_turn playerturn, int hosti, int hostj, int debug[][10]) {
-	int result[4] = { 0 };
-	if (!(i + 1 == hosti && j == hostj))
+//it's a recersive func for capturing
+int check(int i, int j, player_turn playerturn, int hosti, int hostj, int debug[][20]) {
+	int result[4] = { 0 };//save directions are free or no and compare them 
+	if (!(i + 1 == hosti && j == hostj))//check that this side is parent side (this prevent infinity loop checks)
 	{
-		if (i + 1 >= 10 || j >= 10)
+		if (i + 1 >= 10 || j >= 10)//check over flow
 		{
 			result[0] = int(playerturn)*(-1);
 		}
-		else if (debug[i + 1][j] != 0)
+		else if (debug[i + 1][j] != 0)//check if this place is checked before or not
 		{
 			result[0] = int(playerturn)*(-1);
 
 		}
-		else if (array[i + 1][j] == int(playerturn))
+		else if (array[i + 1][j] == int(playerturn))//if it's groupmate or not
 		{
 			debug[i + 1][j] = 1;
 			setGroupBlock(i + 1, j, blocktype::ONE, true); //mix
 			result[0] = check(i + 1, j, playerturn, i, j, debug);
 
 		}
-		else if (array[i + 1][j] == int(playerturn)*(-1))
+		else if (array[i + 1][j] == int(playerturn)*(-1))//if it's enemy
 		{
 			debug[i + 1][j] = 1;
 			result[0] = int(playerturn)*(-1);
@@ -915,29 +865,11 @@ int check(int i, int j, player_turn playerturn, int hosti, int hostj, int debug[
 		return 0;//return this side is free
 	else return playerturn;
 }
-
-
-
-/*void showmsg(player_turn playerturn) {
-	int value;
-	if (playerturn == 1)//white
-	{
-		value = message_box("do you want to continue?", "white won", "captured");
-		if (value == 2)
-			end = true;
-
-	}
-	else
-	{
-		value = message_box("do you want to continue?", "BLACK won", "captured");
-		if (value == 2)
-			end = true;
-	}
-}*/
+//find enemies of putted piece
 bool checkenemy(int i, int j, player_turn playerturn) {
 	bool capture = false;
 	player_turn pt = playerturn == white ? black : white;
-	int debug[10][10] = { 0 };
+	int debug[20][20] = { 0 };
 	int suicide[4] = { 0 };
 	int test[4] = { 0 };// 0 payin 1chap 2rast 3bala
 	if (i + 1 <= 9) {
@@ -948,11 +880,8 @@ bool checkenemy(int i, int j, player_turn playerturn) {
 			suicide[0] = check(i + 1, j, pt, i, j, debug);//check side is capttured?
 			if (suicide[0] != 0) {// dakhel if mix
 				deleteGroup(i + 1, j, array);
-				//Redraw();
-				//resize_screen();
 				capture = true;
-				printf("captured.\n");
-				//showmsg(playerturn);
+				//printf("captured.\n");
 			}
 			else
 				setGroupBlock(i + 1, j, blocktype::ALL, false);
@@ -970,11 +899,8 @@ bool checkenemy(int i, int j, player_turn playerturn) {
 			if (suicide[1] != 0)//dakhel if mix
 			{
 				deleteGroup(i, j - 1, array);
-				//Redraw();
-				//resize_screen();
 				capture = true;
-				printf("captured.\n");
-				//showmsg(playerturn);
+				//printf("captured.\n");
 			}
 			else
 				setGroupBlock(i, j + 1, blocktype::ALL, false);
@@ -992,11 +918,8 @@ bool checkenemy(int i, int j, player_turn playerturn) {
 			if (suicide[2] != 0)
 			{
 				deleteGroup(i, j + 1, array);
-				//Redraw();
-				//resize_screen();
 				capture = true;
-				printf("captured.\n");
-				//showmsg(playerturn);
+				//printf("captured.\n");
 			}
 			else
 				setGroupBlock(i, j + 1, blocktype::ALL, false);
@@ -1014,42 +937,20 @@ bool checkenemy(int i, int j, player_turn playerturn) {
 			if (suicide[3] != 0)
 			{
 				deleteGroup(i - 1, j, array);
-				//Redraw();
-				//resize_screen();
 				capture = true;
-
-				printf("captured.\n");
-				//showmsg(playerturn);
+				//printf("captured.\n");
 			}
 			else
 				setGroupBlock(i - 1, j, blocktype::ALL, false);
 		}
 	}
 	return capture;
-	/*if (!capture)
-	{
-		int temp=0;
-		for (int i = 0; i < 4; i++)
-			temp += test[i];
-		if (temp == 4)
-		{
-			printf("suicide.\n");
-		}
-	}*/
-	//bool issuicide = false;
-	//for (int i = 0; i < 4; i++)
-	//	if (suicide[i] != 0)
-	//		issuicide = true;
-	//if (issuicide)
-	//	//printf("not suicide.\n");
-	//if (!issuicide)
-	//	//printf("suicide. :D\n");
-
 }
+//check whether its suicide or not
 bool suicide(int i, int j, player_turn playerturn)
 {
-	int debug[10][10] = { 0 };
-	if (check(i, j, playerturn, 0, 0, debug))
+	int debug[20][20] = { 0 };
+	if (check(i, j, playerturn, i, j, debug))
 	{
 		setGroupBlock(i, j, blocktype::ALL, false);
 		return true;
@@ -1059,40 +960,6 @@ bool suicide(int i, int j, player_turn playerturn)
 		setGroupBlock(i, j, blocktype::ALL, false);
 		return false;
 	}
-	/*int test[4] = { 0 };
-	if (overflow(i + 1, 0, 9))
-	{
-		test[0] = check(i+1, j, playerturn,i,j,debug);
-	}
-	for (int i = 0; i <= 9; i++)
-		for (int j = 0; j <= 9; j++)
-			debug[i][j] = 0;
-	if (overflow(i - 1, 0, 9))
-	{
-		test[1] = check(i-1, j, playerturn,i,j,debug);
-	}
-	for (int i = 0; i <= 9; i++)
-		for (int j = 0; j <= 9; j++)
-			debug[i][j] = 0;
-	if (overflow(j+1, 0, 9))
-	{
-		test[2] = check(i, j+1, playerturn,i,j,debug);
-	}
-	for (int i = 0; i <= 9; i++)
-		for (int j = 0; j <= 9; j++)
-			debug[i][j] = 0;
-	if (overflow(j- 1, 0, 9))
-	{
-		test[3] = check(i, j-1, playerturn,i,j,debug);
-	}
-	for (int i = 0; i <= 9; i++)
-		for (int j = 0; j <= 9; j++)
-			debug[i][j] = 0;
-	if (test[0] * test[1] * test[2] * test[3] != 0)
-		return true;
-	return false;*/
-	/*player_turn pt = playerturn == white ? black : white;
-	checkenemy(i, j, pt);*/
 }
 
 void setCircle(int &i, int &j)
@@ -1102,7 +969,7 @@ void setCircle(int &i, int &j)
 	circle.center_x = j * (width / 11);
 	circle.center_y = i * (height / 11);
 }
-//check mouse is in circle range
+//eck mouse is in circle range
 bool isinrange(int &i, int &j)
 {
 
@@ -1147,9 +1014,9 @@ void Redraw()
 		}
 	}
 }
+//
 void putPieces()
 {
-//	try
 	{
 		int i, j;
 		setAndis(i, j);//caculate which coordinate has been clicked
@@ -1159,15 +1026,18 @@ void putPieces()
 		{
 			if (playerturn == player_turn::black)
 			{
-				//ai(playerturn, ib, jb);
-				/*ib++;
-				jb++;*/
+				if (ai_try >= 500)
+					pass(playerturn);
+				
 				checkpriority(array, i, j, ib, jb);
 				if (suicide(ib, jb, black))
 				{
 					ib = rand() % 10;
 					jb = rand() % 10;
+					ai_try++;
 				}
+				else
+					ai_try = 0;
 				i = ib + 1;
 				j = jb + 1;
 			}
@@ -1181,32 +1051,27 @@ void putPieces()
 				//check that click is trigger range
 				if (playerturn == white ? isinrange(i, j) : true)
 				{
-
+					
 					//set coordinate for array limits
 					i--;
 					j--;
-
+					
 
 					//is this home filled ?
 					if (arraycheck(array, i, j) == 0)
 					{
 
-						bool test = false;
-
-						//save image into an array
-
-						//checktime(playerturn);
-
+						bool test = false;//if a group is captured it will redraw and delte them
+						array[i][j] = int(playerturn);
 						if (checkenemy(i, j, playerturn))
 						{
-							//Redraw();
-							//resize_screen();
 							test = true;
 						}
 						if (!suicide(i, j, playerturn))
 						{
 							nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r, playerturn);
 							arrayset(array, i, j);
+							playAudio(Audios::putAu,ALLEGRO_PLAYMODE_ONCE);
 							checkGrouping(i, j, playerturn, array);
 							if (test)
 							{
@@ -1216,33 +1081,12 @@ void putPieces()
 							turn();
 							stopTimer();
 							startTimer(playerturn);
-
 						}
 						else {
-							//();
-							//resize_screen();
-							printf("suicide.\n");
+							array[i][j] = 0;
+							//printf("suicide.\n");
 						}
-						//print_text("hi", 0, 0, 255, 255, 255);
-						/*arrayset(array, i, j);
-						checkGrouping(i, j, playerturn, array);
-						checkenemy(i, j, playerturn);
-						if (!suicide(i, j, playerturn))
-						{
-							turn();
-							stopTimer();
-							startTimer(playerturn);
-						}
-						else
-							printf("suicide.\n");*/
-
-							//change player turn
-							//int checkresult=check(i, j, playerturn, i, j);
-							/*	if (checkresult == 0)
-							printf("free \n");
-							else
-							printf("capture.\n");*/
-
+				
 					}
 					else
 					{
@@ -1255,16 +1099,10 @@ void putPieces()
 		{
 			if (playerturn == black)
 			{
-				//al_rest(.5f);
 				putPieces();
 			}
 		}
-	}
-	//catch (const std::exception&)
-	//{
-		//end = true;
-	//}
-	
+	}	
 }
 
 void init_primitive() {
@@ -1309,7 +1147,6 @@ void print_text(const char text[], int x, int y, int R , int G , int B , const c
 	al_draw_text(font, al_map_rgb(R, G, B), x, y, ALLEGRO_ALIGN_CENTER, text);
 	al_flip_display();
 }
-//void ()
 //show a message box on screen
 int message_box(const char* message = "No message given",
 	const char* content_title = "Error",
@@ -1375,34 +1212,7 @@ void destroy_bitmap(ALLEGRO_BITMAP *image)
 	al_destroy_bitmap(image);
 	al_flip_display();
 }
-/*//this in test progress
-void undo()
-{
-int i, j;
-printf("Test");
-setAndis(i, j);//caculate which coordinate has been clicked
-if (i >= 1 && i <= 10)
-{
-if (j >= 1 && j <= 10)
-{
-//check that click is trigger range
-if (isinrange(i, j))
-{
-
-if (arraycheck(array, i - 1, j - 1))
-{
-//destroy_bitmap(nuts_images[i - 1][j - 1]);
-array[i - 1][j - 1] = 0;
-al_resize_display(al_get_current_display(), width, height);
-resize_screen();
-//Redraw();
-al_flip_display();
-}
-
-}
-}
-}
-}*/
+//will resize screen and redraw 
 void resize_screen()
 {
 
@@ -1411,25 +1221,27 @@ void resize_screen()
 	switch (_gamestate)
 	{
 	case menu:
-		strcpy(name, "resources/Mainmenu.png");
+		strcpy(name, "Mainmenu.png");
 		break;
 	case singleplayer:
-		strcpy(name, "resources/go_bg2.png");
+		strcpy(name, "go_bg2.png");
 		break;
 	case twoplayer:
-		strcpy(name, "resources/go_bg2.png");
+		strcpy(name, "go_bg2.png");
 		break;
 	case about:
-		strcpy(name, "resources/About.png");
+		strcpy(name, "About.png");
 		break;
 	case startbranch:
-		strcpy(name, "resources/startbranch.png");
+		strcpy(name, "startbranch.png");
+		break;
+	case GameOver:
+		strcpy(name, "GameOver.png");
+		//gameover();
 		break;
 	default:
 		break;
 	}
-	
-	//create_bitmap("sfa", 0, 0, 0, 0);
 	al_acknowledge_resize(al_get_current_display());	//let gpu know that screen is resized 
 	height = al_get_display_height(al_get_current_display());//height of window
 	width = al_get_display_width(al_get_current_display());//width of window
@@ -1439,12 +1251,28 @@ void resize_screen()
 	al_flip_display();
 	configureBtn();
 }
+//show a circle when you hover with keyboard
+void showHover()
+{
+	destroy_bitmap(hovershow);
+	int x, y,r;
+	x = (makan.posx+1)*width / 11 - .5f;
+	y = (makan.posy+1)*height / 11 - .5f;
+	x -= circle.r;
+	y -= circle.r;
+	r = circle.r * 2;
+	hovershow = create_bitmap("hover.png", x, y, r, r);
+	
+	resize_screen();
+	turnShow();
+}
+
 void savedata()
 {
 	FILE *infile = NULL;
 	infile = fopen("data", "w+b");
 
-	int x = int(playerturn);
+	//int x = int(playerturn);
 	fwrite(&playerturn, sizeof(player_turn), 1, infile);
 	for (int i = 0; i < 10; i++)
 	{
@@ -1460,6 +1288,11 @@ void savedata()
 			fwrite(&tm, sizeof(int), 1, infile);
 		}
 	}
+	int temp = getPacks(black);
+	fwrite(&temp, sizeof(int), 1, infile);
+	temp = getPacks(white);
+	fwrite(&temp, sizeof(int), 1, infile);
+	fflush(infile);
 	fclose(infile);
 	printf("saved.\n");
 }
@@ -1471,8 +1304,7 @@ void loaddata()
 	for (int i = 0; i < 10; i++)
 	{
 		fread(array[i], sizeof(int), 10, infile);
-		/*for(int j=0;j<10;j++)
-			nuts_images[i][j]=crea*/
+		
 	}
 	for (int i = 0; i < 10; i++)
 	{
@@ -1485,21 +1317,22 @@ void loaddata()
 			setGroupBlock(i, j, blocktype::ONE, temp);
 		}
 	}
+	int temp;
+	fread(&temp, sizeof(int), 1, infile);
+	setPacks(temp, black);
+	fread(&temp, sizeof(int), 1, infile);
+	setPacks(temp, white);
 	//Redraw();
 	fclose(infile);
 }
 //control events
 void event_manager(ALLEGRO_EVENT ev)
 {
-	//float cursor_x = 0, cursor_y = 0;//mouse coordinates
-	//check mouse events
+		//check mouse events
 	if (ev.type == ALLEGRO_EVENT_MOUSE_AXES ||
 		ev.type == ALLEGRO_EVENT_MOUSE_ENTER_DISPLAY) {
 		redraw = true;
-		//	mouse.posx = ev.mouse.x;
-		//	mouse.posy = ev.mouse.y;
-
-
+		
 	}
 	//do the resizing process
 	else if (ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE)
@@ -1515,27 +1348,47 @@ void event_manager(ALLEGRO_EVENT ev)
 		{
 			mouse.posx = ev.mouse.x;
 			mouse.posy = ev.mouse.y;
-			//printf("x:%f\n", mouse.posx);
-			//printf("y:%f\n", mouse.posy);
 			buttonSence();
 			if(_gamestate==gamestate::singleplayer||_gamestate==gamestate::twoplayer)
 				putPieces();//call put function
 		}
-		/*else if (ev.mouse.button == 2)//this in test progress
-		{
-		//printf("test1");
-		mouse.posx = ev.mouse.x;
-		mouse.posy = ev.mouse.y;
-		undo();
-		}*/
+		
 	}
 	else if ((_gamestate==gamestate::twoplayer||_gamestate==gamestate::singleplayer)&&ev.type == ALLEGRO_EVENT_TIMER) {
 		if (checkEnd(playerturn))
+		{
+			playAudio(Audios::Gameover, ALLEGRO_PLAYMODE_ONCE);
+			al_rest(3);
 			end = true;
-		printf("time is %.2f\n", ev.timer.count / 10.0f);
-		//float temp = getTime() / 10;
-		//print_text(ftoa(temp, 1, 2), 40, 24);
-		//al_flip_display();
+		}
+		//printf("time is %.2f\n", ev.timer.count / 10.0f);
+		if (ev.timer.count < 200)
+		{
+			if (ev.timer.count % 10 == 0)
+			{
+				UpdateConsole();
+			}
+		}
+		else if(ev.timer.count<250)
+		{
+			if (ev.timer.count % 5 == 0)
+				UpdateConsole();
+		}
+		else if (ev.timer.count < 280)
+		{
+			if (ev.timer.count % 2 == 0)
+				UpdateConsole();
+		}
+		else if (ev.timer.count == 300)
+		{
+			playAudio(Audios::packEnd, ALLEGRO_PLAYMODE::ALLEGRO_PLAYMODE_ONCE);
+		}
+		else
+		{
+			if (ev.timer.count % 1 == 0)
+				UpdateConsole();
+		}
+		
 	}
 	//do close process
 	else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
@@ -1546,42 +1399,100 @@ void event_manager(ALLEGRO_EVENT ev)
 	//keyboard input
 	else if (ev.type == ALLEGRO_EVENT_KEY_DOWN)
 	{
+		switch (_gamestate)
+		{
+		case menu:
+			break;
+		case singleplayer:
+		case twoplayer:
+			if (ev.keyboard.keycode == ALLEGRO_KEY_SPACE)
+			{
+
+
+				pass(playerturn);
+
+			}
+			else if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE)
+			{
+
+				if (message_box("warning", "are you want to save?", "") == 1)
+				{
+					savedata();
+					changeScreen(gamestate::menu);
+				}
+				else
+				{
+					changeScreen(gamestate::menu);
+					//printf("else\n");
+				}
+				stopTimer();
+
+			}
+			else if (ev.keyboard.keycode == ALLEGRO_KEY_S) {
+				savedata();
+			}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_UP)
+			{
+				if (overflow(makan.posy, 1, 9))
+				{
+					makan.posy--;
+					showHover();
+				}
+			}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_DOWN) {
+				if (overflow(makan.posy, 0, 8))
+				{
+					makan.posy++;
+					showHover();
+				}
+			}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
+				if (overflow(makan.posx, 0, 8))
+				{
+					makan.posx++;
+					showHover();
+				}
+			}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_LEFT) {
+				if (overflow(makan.posx, 1, 9))
+				{
+					makan.posx--;
+					showHover();
+				}
+			}
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_ENTER) {
+				mouse.posx = ((makan.posx + 1)*width) / 11 - .5f;
+				mouse.posy = ((makan.posy + 1)*height) / 11 - .5f;
+				putPieces();
+			}
+			break;
+		case about:
+			if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE)
+				changeScreen(gamestate::menu);
+			break;
+		case startbranch:
+			if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE)
+				changeScreen(gamestate::menu);
+			break;
+		case GameOver:
+			break;
+		default:
+			break;
+		}
 		//close process
 		if (ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
 		{
 			al_destroy_display(al_get_current_display());
 			end = true;
-		}
-		else if (ev.keyboard.keycode == ALLEGRO_KEY_SPACE)
+		} 
+		else if (ev.keyboard.keycode == ALLEGRO_KEY_M)
 		{
-
-
-			pass(playerturn);
-
+			muteAudio(Audios::bgAu);
 		}
-		else if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE)
-		{
-			int temp = message_box("warning", "Do you want to save?", "");
-			if (temp == 0)
-			{
-				savedata();
-				
-				changeScreen(gamestate::menu);
-			}
-			else
-			{
-				changeScreen(gamestate::menu);
-			}
-		}
-		else if (ev.keyboard.keycode == ALLEGRO_KEY_S) {
-			savedata();
-		}
-		//else if(ev.keyboard.keycode==ALLEGRO_KEY_F1) //al_stop_sample()
+		
 	}
 	if (redraw) {
 		redraw = false;
-		//printf("mouse curosr location is updated : (%f, %f)", mouse.posx, mouse.posy);
-		//printf("max height = \n %f", max_height);
 		al_flip_display();
 	}
 }
@@ -1607,25 +1518,31 @@ void changeScreen(gamestate gs)
 	{
 	case menu:
 		
-		strcpy(bgname, "resources/Mainmenu.png");
+		strcpy(bgname, "Mainmenu.png");
 		bg_image = create_bitmap(bgname, 0, 0, width, height);
 		break;
 	case singleplayer:
-		strcpy(bgname, "resources/go_bg2.png");
+		strcpy(bgname, "go_bg2.png");
 		bg_image = create_bitmap(bgname, 0, 0, width, height);
 		startTimer(playerturn);
+		turnShow();
 		break;
 	case twoplayer:
-		strcpy(bgname, "resources/go_bg2.png");
+		strcpy(bgname, "go_bg2.png");
 		bg_image = create_bitmap(bgname, 0, 0, width, height);
 		startTimer(playerturn);
+		turnShow();
 		break;
 	case about:
-		strcpy(bgname, "resources/About.png");
+		strcpy(bgname, "About.png");
 		bg_image = create_bitmap(bgname, 0, 0, width, height);
 		break;
 	case startbranch:
-		strcpy(bgname, "resources/startbranch.png");
+		strcpy(bgname, "startbranch.png");
+		bg_image = create_bitmap(bgname, 0, 0, width, height);
+		break;
+	case GameOver:
+		strcpy(bgname, "GameOver.png");
 		bg_image = create_bitmap(bgname, 0, 0, width, height);
 		break;
 	default:
@@ -1655,12 +1572,12 @@ void buttonSence()
 		if (isButtonPressed(_button[buttons::Startbtn]))
 		{
 			changeScreen(gamestate::startbranch);
-			printf("Start.\n");
+			//printf("Start.\n");
 		}
 		else if (isButtonPressed(_button[buttons::aboutbtn]))
 		{
 			changeScreen(gamestate::about);
-			printf("About.\n");
+			//printf("About.\n");
 		}
 		else if (isButtonPressed(_button[buttons::exitbtn]))
 		{
@@ -1668,7 +1585,7 @@ void buttonSence()
 			temp=message_box("", "Are you Sure ?", "Warning");
 			if (temp ==1)
 				end = true;
-			printf("Exit.\n");
+			//printf("Exit.\n");
 		}
 		
 		break;
@@ -1677,22 +1594,22 @@ void buttonSence()
 		if (isButtonPressed(_button[buttons::singleplayerbtn]))
 		{
 			changeScreen(gamestate::singleplayer);
-			printf("single.\n");
+			//printf("single.\n");
 		}
 		else if (isButtonPressed(_button[buttons::twoplayerbtn]))
 		{
 			changeScreen(gamestate::twoplayer);
-			printf("twopla\n");
+			//printf("twopla\n");
 		}
 		else if (isButtonPressed(_button[buttons::backbtn]))
 		{
 			changeScreen(gamestate::menu);
-			printf("About.\n");
+			//printf("About.\n");
 		}
 		else if (isButtonPressed(_button[buttons::loadbtn]))
 		{
 			loaddata();
-			printf("game is loading.\n");
+			printf("game loaded.\n");
 		}
 		break;
 	case singleplayer:
@@ -1743,21 +1660,24 @@ void configureBtn()
 }
 int main()
 {
-	//al_set_new_display_option(ALLEGRO_SINGLE_BUFFER, 1, 1);
+	makan.posx = 5;
+	makan.posy = 5;
 	_gamestate = gamestate::menu;
-	komi(whitescore,blackscore, playerturn);
 	//init seed
 	srand(time(NULL));
 	get_max_screen_size();
 	inits();
 	configureBtn();
-	char name[] = "resources/Mainmenu.png";
-	char audioname[] = "resources/bgf.wav";
-
-	if (loadAuido(audioname))
-	printf("Audio init.\n");
-	if (playAudio(ALLEGRO_PLAYMODE_LOOP))
-	printf("audio played.\n");
+	char name[] = "Mainmenu.png";
+	//char audioname[] = "bgf.wav";
+	loadAuido("gameoverCH.wav", Audios::Gameover);
+	loadAuido("tick2.ogg", Audios::putAu);
+	loadAuido("clocktick.wav", Audios::clockAu);
+	loadAuido("packEnd.wav", Audios::packEnd);
+	if (loadAuido("bgf.wav",Audios::bgAu))
+	//printf("Audio init.\n");
+	if (playAudio(Audios::bgAu,ALLEGRO_PLAYMODE_LOOP))
+	//printf("audio played.\n");
 
 	bg_image = create_bitmap(name, 0, 0, width, height);
 	initTimer();
@@ -1768,20 +1688,7 @@ int main()
 	al_register_event_source(event_queue, al_get_keyboard_event_source());//keyboard source	
 	al_register_event_source(event_queue, al_get_timer_event_source(getTimer()));
 	
-	
-	//printf("%f",al_get_timer_speed(getTimer()));
-	//al_start_timer(getTimer());
 	ALLEGRO_EVENT ev;
-	//startTimer();
-	//ev.timer.count = 0;
-	/*if(al_get_timer_started(getTimer()))
-	printf("%d\n",12 );
-	else
-	{
-		printf("%d\n", 13);
-	}*/
-	//al_start_timer(getTimer());
-	//changeScreen(gamestate::about);
 	//main loop
 	while (!end)
 	{
@@ -1792,6 +1699,9 @@ int main()
 		
 
 	}
+	
+	printf("white score is: %d", whitescore);
+	printf("black score is: %d", blackscore);
 
 	return 0;
 }
