@@ -45,6 +45,7 @@ void addGroup(int i, int j, int color,char just)
 	//_group[i][j].j = j;
 	_group[i][j].token = usednumber * 10 + color + 1;
 	usednumber++;
+	printf("number is:%d\n", usednumber);
 }
 int getColorOfGroup(int i, int j)
 {
@@ -55,33 +56,45 @@ bool checkGrouping(int i, int j, int color,int array[][10])
 	int tempi[4] = { 0 }, tempj[4] = { 0 };
 	bool sw = false;
 	bool switches[4] = { 0 };
-	if (array[i][j + 1] == color)
+	if (j + 1 < 10)
 	{
-		tempi[0] = i;
-		tempj[0] = j+1;
-		switches[0] = true;
-		sw = true;
+		if (array[i][j + 1] == color)
+		{
+			tempi[0] = i;
+			tempj[0] = j + 1;
+			switches[0] = true;
+			sw = true;
+		}
 	}
-	if (array[i][j -1] == color)
+	if (j - 1 >= 0)
 	{
-		tempi[1] = i;
-		tempj[1] = j - 1;
-		switches[1] = true;
-		sw = true;
+		if (array[i][j - 1] == color)
+		{
+			tempi[1] = i;
+			tempj[1] = j - 1;
+			switches[1] = true;
+			sw = true;
+		}
 	}
-	if (array[i+1][j ] == color)
+	if (i + 1 < 10)
 	{
-		tempi[2] = i+1;
-		tempj[2] = j ;
-		switches[2] = true;
-		sw = true;
+		if (array[i + 1][j] == color)
+		{
+			tempi[2] = i + 1;
+			tempj[2] = j;
+			switches[2] = true;
+			sw = true;
+		}
 	}
-	if (array[i-1][j] == color)
+	if (i - 1)
 	{
-		tempi[3] = i-1;
-		tempj[3] = j;
-		switches[3] = true;
-		sw = true;
+		if (array[i - 1][j] == color)
+		{
+			tempi[3] = i - 1;
+			tempj[3] = j;
+			switches[3] = true;
+			sw = true;
+		}
 	}
 	if (!sw)
 	{
