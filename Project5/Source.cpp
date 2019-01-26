@@ -39,6 +39,7 @@ struct Mouse
 //functions prototype
 ALLEGRO_BITMAP *create_bitmap(char[], float, float, int, int);
 void destroy_bitmap(ALLEGRO_BITMAP*);
+void ai(int [][10], int &, int &);
 ALLEGRO_BITMAP *create_circle(float, float, float);
 bool isinrange(int &, int &);
 int message_box(const char*,
@@ -48,6 +49,7 @@ void resize_screen();
 void Redraw(); //mix
 
 //global Variables
+int aidebug[10][10] = { 0 };
 int ib = 0, jb = 0,iw=0,jw=0;
 int array[10][10] = { 0 }; // 0 empty 1 white -1 black
 int whitescore = 0, blackscore = 0;
@@ -101,8 +103,17 @@ void changeState(gamestate gs) //mix
 
 }
 
-void deadones() {}
-void komi(int &whitescore,int &blackscore, int playerturn) {
+void deadones(int array[][10],player_turn playerturn) { // mohre haye morde
+	int cpyarr[10][10];
+	for(int i=0;i<=9;i++)
+		for (int j = 0; j <= 9; j++) {
+			cpyarr[i][j] = array[i][j];
+			if (cpyarr[i][j] == int(playerturn)|| cpyarr[i][j] == 0)
+				cpyarr[i][j] = int(playerturn)*-1;
+		}
+
+}
+void komi(int &whitescore,int &blackscore, int playerturn) { //meghdar komi baraye shoroo konande
 	if (playerturn == white)
 		whitescore += 6.5;
 	else
@@ -155,7 +166,7 @@ void scoring(int array[][10],int &blackscore,int &whitescore)
 {
 	int i = 0;
 	int j = 0;
-	deadones();
+	deadones(array,playerturn);
 	for (i = 0; i <= 9; i++)
 	{
 		for (j = 0; j <= 9; j++)
@@ -285,12 +296,12 @@ void eyemaker(int array[][10], int &ib, int &jb, int initiali, int initialj) {
 
 
 
-int findwhitegp(int &iw,int &jw ){
+int findwhitegp(int &iw,int &jw,int startpointi,int startpointj ){
 	int sw = 0;
 	int i = 0;
 	int j = 0;
-	for ( i = iw; i <= 9; i++) {
-		for ( j = jw; j <= 9; j++)
+	for ( i = startpointi; i <= 9; i++) {
+		for ( j = startpointj; j <= 9; j++)
 		{
 			if (getColorOfGroup(i, j) == 1)
 			{
@@ -300,56 +311,90 @@ int findwhitegp(int &iw,int &jw ){
 			}
 		if (sw == 1) break;
 	}
-	iw = i;
-	jw = j;
-	return gettoken(i,j);
-}
 
-
-void offensive(int array[][10], int &ib, int &jb)
-{
-	int i, j,sw=0;
-	int token;
-	token = findwhitegp(iw, jw);
-	for (i = 0; i <= 9; i++) {
-		for (j = 0; j <= 9; j++)
-		{
-			if (gettoken(i,j)== token)
-				sw = 1;
-			break;
-		}
-		if (sw == 1) break;
-	}
-	if (array[i + 1][j] == 0)
-	{
-		ib = i + 1;
-		jb = j;
-	}
-	else if (array[i - 1][j] == 0)
-	{
-		ib = i - 1;
-		jb = j;
-	}
-	else if (array[i][j - 1] == 0) {
-		
-		ib = i;
-		jb = j - 1;
-	}
-	else if (array[i][j + 1] == 0)
-	{
-		ib = i;
-		jb = j + 1;
+	if (i > 9 || j > 9) {
+		iw = rand() % 10;
+		jw = rand() % 10;
+	//	pass(playerturn);
+		return 0;
 	}
 	else
 	{
-		ib = rand() % 10;
-		jb = rand() % 10;
+		iw = i;
+		jw = j;
+		return gettoken(i, j);
+	}
+		
+}
 
+int offrecresive(int i,int j,int array[][10]) { // mire mohre ro capture mikone  
+	int swo=0;
+	if (overflow(i + 1, 0, 9)) 
+		if (array[i + 1][j] == 0)
+		{
+			ib = i + 1;
+			jb = j;
+			return 1;
+		}
+	
+	 if (overflow(i - 1, 0, 9)) 
+		if (array[i - 1][j] == 0)
+		{
+			ib = i - 1;
+			jb = j;
+			return 1;
+		}
+	
+	if (overflow(j - 1, 0, 9)) 
+		if (array[i][j - 1] == 0) {
+
+			ib = i;
+			jb = j - 1;
+			return 1;
+		}
+	
+	if (overflow(j + 1, 0, 9)) 
+		if (array[i][j + 1] == 0)
+		{
+			ib = i;
+			jb = j + 1;
+			return 1;
+		}
+	
+	if(true)
+	{
+		//ib = rand() % 10;
+		//jb = rand() % 10;
+		return 0;
+
+	}
+	
+}
+
+void offensive(int array[][10], int &ib, int &jb, int startpointi, int startpointj)
+{
+	int i, j,y=0,x=0;
+	int token;
+	token = findwhitegp(iw, jw,startpointi,startpointj);
+	/*for (i = 0; i <= 9; i++) {
+		for (j = 0; j <= 9; j++)
+		{
+			if (gettoken(i, j) == token) {
+				sw = 1;
+				break;
+			}
+		}
+		if (sw == 1) break;
+	}*/
+	y=offrecresive(iw, jw, array);
+	if (!y) {
+		x = jw + 1;
+		offensive(array, iw, jw,iw,x);
 	}
 
 }
 
-void neighbourprio(int &ib, int &jb, int array[][10]) {
+int neighbourprio(int &ib, int &jb, int array[][10]) {
 	int counterbala = 0, counterpayin = 0, counterrast = 0, counterchap = 0, ibala = 0, ipayin = 0, ichap = 0, irast = 0;
 	int jbala = 0, jpayin = 0, jchap = 0, jrast = 0;
 	int ibavaliye = ib;
@@ -495,11 +540,18 @@ void neighbourprio(int &ib, int &jb, int array[][10]) {
 
 			if (array[ib][jb - 1] == 0) { jb--; sw = 1; }
 		if (ibavaliye == ib&&jbavaliye == jb) {
-			ib = rand() % 10;
-			jb = rand() % 10;
+			ai(array, ib, jb);
+
+			//ib = rand() % 10;
+			//jb = rand() % 10;
 			//offensive(array, ib, jb);
 			//eyemaker(array, ib, jb, 1, 1);
 			
+		}
+		if (ibavaliye == ib&&jbavaliye == jb) {
+			//ib = rand() % 10;
+			//jb = rand() % 10;
+			offensive(array, ib, jb,0,0);
 		}
 	}
 	else
@@ -525,10 +577,12 @@ void neighbourprio(int &ib, int &jb, int array[][10]) {
 		//else if()
 	
 		else { // masaln countere bala va payin dotashoon 1beshan
-			ib = rand() % 10;
-			jb = rand() % 10;
+			//ib = rand() % 10;
+			//jb = rand() % 10;
+			offensive(array, ib, jb, 0, 0);
+			return 1;
 			
-			//offensive(array, ib, jb);
+			
 			//eyemaker(array, ib, jb, 1, 1 );
 			
 		}
@@ -537,25 +591,26 @@ void neighbourprio(int &ib, int &jb, int array[][10]) {
 }
 
 void checkpriority(int array[][10], int i, int j, int &ib, int &jb) {
-	int x;
+	int x,y;
 	x = checkwhiteenemy(i - 1, j - 1, array, ib, jb);// ib va jb dakhel array ro mide
 	if (x == 0) {
-		ib = rand() % 10;
-		jb = rand() % 10;
+		//ib = rand() % 10;
+		//jb = rand() % 10;
 		
-		//offensive(array, ib, jb);
+		offensive(array, ib, jb, 0, 0);
 	//	eyemaker(array, ib, jb, 1, 1);
 		
 	}
 	else
 	{
 		if (overflow(ib, 0, 9) && overflow(jb, 0, 9))
-			neighbourprio(ib, jb, array);// ib jayi ke roosh mishe keshido nide
+		y=	neighbourprio(ib, jb, array);// ib jayi ke roosh mishe keshido nide
+		
 		else
 		{
-			ib = rand() % 10;
-			jb = rand() % 10;
-			//offensive(array, ib, jb);
+			//ib = rand() % 10;
+			//jb = rand() % 10;
+			offensive(array, ib, jb, 0, 0);
 			
 		//	eyemaker(array, ib, jb, 1, 1);
 			
@@ -563,11 +618,93 @@ void checkpriority(int array[][10], int i, int j, int &ib, int &jb) {
 	}
 
 }
-void ai(player_turn playerturn, int &ib, int &jb) { //i , j dakhele array ro mide
-	if (playerturn == black) {
-		ib = rand() % 10;
-		jb = rand() % 10;
+int charjahat(int i1, int j1,int array[][10]) { //in tabe check mikone bebine kenare khoone i j khali voojooddarad ya na
+	int sw=0;
+	if (aidebug[i1][j1] == 1) return 0; // bastas va ghablan check shode
+	if (overflow(i1 + 1, 0, 9))
+	{
+		if (array[i1 + 1][j1] == 0)
+		{
+			sw = 1;
+		}
 	}
+	else if (overflow(i1 - 1, 0, 9) && sw == 0) {
+		if (array[i1 - 1][j1] == 0)
+		{
+			sw = 1;
+		}
+	}
+	else if (overflow(j1 - 1, 0, 9) && sw == 0) {
+		if (array[i1][j1 - 1] == 0) {
+
+			sw = 1;
+		}
+	}
+	else if (overflow(j1 + 1, 0, 9) && sw == 0) {
+		if (array[i1][j1 + 1] == 0)
+		{
+			sw = 1;
+		}
+	}
+	if (sw == 1) return 1; //kenaresh yek khoone khali vojood darad
+	else {
+		aidebug[i1][j1] = 1;
+		return 0;//4tarafash baste ast
+	}
+	}
+
+
+
+void ai(int array[][10], int &ib, int &jb) {
+	int token,sw1=0;
+	int i1, j1;
+	token = gettoken(ib, jb);
+	for (i1 = 0; i1 <= 9; i1++)
+	{
+		for (j1 = 0; j1 <= 9; j1++) {
+
+			if (gettoken(i1, j1) == token)
+			{
+				if (charjahat(i1, j1, array))
+				{
+					sw1 = 1;
+					break;
+				}
+				else {
+					continue;
+				}
+			
+			}
+		}
+		if (sw1 == 1) break;
+	}
+	if(overflow(i1 + 1,0,9))
+	if (array[i1 + 1][j1] == 0)
+	{
+		ib = i1 + 1;
+		jb = j1;
+	}
+	else if(overflow(i1 - 1, 0, 9))
+		if (array[i1 - 1][j1] == 0)
+	{
+		ib = i1 - 1;
+		jb = j1;
+	}
+	else if (overflow(j1- 1, 0, 9))
+		if (array[i1][j1 - 1] == 0) {
+
+		ib = i1;
+		jb = j1 - 1;
+	}
+	else if (overflow(j1 + 1, 0, 9))
+		if (array[i1][j1 + 1] == 0)
+	{
+		ib = i1;
+		jb = j1 + 1;
+	}
+	else
+		ai(array, ib, jb);
+
 }
 
 
