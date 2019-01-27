@@ -57,6 +57,7 @@ int aidebug[10][10] = { 0 };//used in charjahat
 int ai_try = 0;//used in putPieces  suicide to limit ai try for random numbers
 int ib = 0, jb = 0, iw = 0, jw = 0;//where ai want to put his decision
 int array[10][10] = { 0 }; // 0 empty 1 white -1 black
+int whitenuts = 40, blacknuts = 41;
 int whitescore = 0, blackscore = 0;//keep scores of players
 //int score[2]; //0 for black and 1 for white 
 bool end = false, redraw = true;//end:ending the main loop
@@ -127,6 +128,8 @@ void UpdateConsole()
 	system("CLS");
 	printf("BlackPacks:%d\n", getPacks(black));
 	printf("WhitePacks:%d\n", getPacks(white));
+	printf("WhiteNuts:%d\n", whitenuts);//debug process
+	printf("BlackNuts:%d\n", blacknuts);//test process
 	playAudio(Audios::clockAu, ALLEGRO_PLAYMODE::ALLEGRO_PLAYMODE_ONCE);
 	printf("Timer Count:%.1f\n", getTime()/10.0f);
 }
@@ -1018,6 +1021,7 @@ void Redraw()
 void putPieces()
 {
 	{
+		
 		int i, j;
 		setAndis(i, j);//caculate which coordinate has been clicked
 		iw = i - 1;
@@ -1069,6 +1073,18 @@ void putPieces()
 						}
 						if (!suicide(i, j, playerturn))
 						{
+							switch (playerturn)
+							{
+							case black:
+								blacknuts--;
+								
+								break;
+							case white:
+								whitenuts--;
+								break;
+							default:
+								break;
+							}
 							nuts_images[i][j] = create_circle(circle.center_x, circle.center_y, circle.r, playerturn);
 							arrayset(array, i, j);
 							playAudio(Audios::putAu,ALLEGRO_PLAYMODE_ONCE);
@@ -1094,6 +1110,25 @@ void putPieces()
 					}
 				}
 			}
+		}
+		switch (playerturn)
+		{
+		case black:
+			if (blacknuts <= 0)
+			{
+				pass(playerturn);
+				return;
+			}
+			break;
+		case white:
+			if (whitenuts <= 0)
+			{
+				pass(playerturn);
+				return;
+			}
+			break;
+		default:
+			break;
 		}
 		if (_gamestate == gamestate::singleplayer)
 		{
@@ -1349,8 +1384,29 @@ void event_manager(ALLEGRO_EVENT ev)
 			mouse.posx = ev.mouse.x;
 			mouse.posy = ev.mouse.y;
 			buttonSence();
-			if(_gamestate==gamestate::singleplayer||_gamestate==gamestate::twoplayer)
+			if (_gamestate == gamestate::singleplayer || _gamestate == gamestate::twoplayer)
+			{
+				switch (playerturn)
+				{
+				case black:
+					if (blacknuts <= 0)
+					{
+						pass(playerturn);
+						return;
+					}
+					break;
+				case white:
+					if (whitenuts <= 0)
+					{
+						pass(playerturn);
+						return;
+					}
+					break;
+				default:
+					break;
+				}
 				putPieces();//call put function
+			}
 		}
 		
 	}
@@ -1461,6 +1517,25 @@ void event_manager(ALLEGRO_EVENT ev)
 				}
 			}
 		else if (ev.keyboard.keycode == ALLEGRO_KEY_ENTER) {
+				switch (playerturn)
+				{
+				case black:
+					if (blacknuts <= 0)
+					{
+						pass(playerturn);
+						return;
+					}
+					break;
+				case white:
+					if (whitenuts <= 0)
+					{
+						pass(playerturn);
+						return;
+					}
+					break;
+				default:
+					break;
+				}
 				mouse.posx = ((makan.posx + 1)*width) / 11 - .5f;
 				mouse.posy = ((makan.posy + 1)*height) / 11 - .5f;
 				putPieces();
@@ -1507,8 +1582,6 @@ void inits()
 	init_display(0);
 	init_text();
 }
-
-
 //test proces
 void changeScreen(gamestate gs)
 {
