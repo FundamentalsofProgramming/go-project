@@ -57,7 +57,7 @@ int aidebug[10][10] = { 0 };//used in charjahat
 int ai_try = 0;//used in putPieces  suicide to limit ai try for random numbers
 int ib = 0, jb = 0, iw = 0, jw = 0;//where ai want to put his decision
 int array[10][10] = { 0 }; // 0 empty 1 white -1 black
-int whitenuts = 40, blacknuts = 41;
+int whitenuts = 41, blacknuts = 40;
 int whitescore = 0, blackscore = 0;//keep scores of players
 //int score[2]; //0 for black and 1 for white 
 bool end = false, redraw = true;//end:ending the main loop
